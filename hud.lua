@@ -7,18 +7,17 @@ function courseplay:HudPage(self)
   for c=1, 2, 1 do
     for v,name in pairs(self.hudpage[Page][c]) do
       if c == 1 then
-        local yspace = 0.383 - ((v-1) * 0.021)
-        renderText(0.763, yspace, 0.017, name);
+        local yspace = self.hudInfoBasePosY + 0.168 - ((v-1) * 0.021)
+        renderText(self.hudInfoBasePosX + 0.003, yspace, 0.017, name);
       elseif c == 2 then
-       local yspace = 0.383 - ((v-1) * 0.021)
-       renderText(0.9, yspace, 0.013, name);
+       local yspace = self.hudInfoBasePosY + 0.168 - ((v-1) * 0.021)
+       renderText(self.hudInfoBasePosX + 0.115, yspace, 0.013, name);
       end
      i = i + 1
     end
     i = 0
   end
 end
-
 
 function courseplay:loadHud(self)
   self.hudpage[1][1] = {}
@@ -124,10 +123,10 @@ function courseplay:loadHud(self)
    		 	end
    		end
 	  elseif self.showHudInfoBase == 3 then
-		self.hudpage[3][1][1]= "Abstand zum Drescher (z):"
+		self.hudpage[3][1][1]= "seitl. Abstand:"
 	    self.hudpage[3][1][2]= "Start bei%:"
 		self.hudpage[3][1][3]= "Wenderadius:"
-		self.hudpage[3][1][4]= "Abstand zum Drescher (x):"
+		self.hudpage[3][1][4]= "Pipe Abstand:"
 		
 		if self.ai_state ~= nil then
 			self.hudpage[3][2][1]= string.format("%.1f", self.combine_offset)
@@ -151,16 +150,42 @@ function courseplay:loadHud(self)
 		else
 		  self.hudpage[3][2][4]= "---"
 		end	
-	  
+		
 	  elseif self.showHudInfoBase == 4 then
-	    self.hudpage[4][1][1]= "Wendemanöver:"
-	    self.hudpage[4][1][2]= "Auf dem Feld:"
-	    self.hudpage[4][1][3]= "Auf Straße:"
+	    self.hudpage[4][1][1]= "Aktuell:"
+	    self.hudpage[4][1][2]= "Automatisch suchen:"
+	    self.hudpage[4][1][3]= "Fest gespeichert:"
+	  
+	    if self.active_combine ~= nil then
+	      self.hudpage[4][2][1] = self.active_combine.name
+	    else
+	      self.hudpage[4][2][1] = "keiner"
+	    end
+	  
+	    if self.search_combine then
+	      self.hudpage[4][2][2]= "ein"
+	    else
+	      self.hudpage[4][2][2]= "aus"
+	    end
 	    
-	    self.hudpage[4][2][1]= string.format("%d", self.turn_speed*3600)
-	    self.hudpage[4][2][2]= string.format("%d", self.field_speed*3600)
-	    self.hudpage[4][2][3]= string.format("%d", self.max_speed*3600)
-	  end
+	    if self.saved_combine ~= nil then
+	      self.hudpage[4][2][3] = self.saved_combine.name
+	    else
+	      self.hudpage[4][2][3] = "keiner"
+	    end
+
+	  elseif self.showHudInfoBase == 5 then
+	    self.hudpage[5][1][1]= "Wendemanöver:"
+	    self.hudpage[5][1][2]= "Auf dem Feld:"
+	    self.hudpage[5][1][3]= "Auf Straße:"
+			self.hudpage[5][1][5]= "P Faktor:"
+	    
+	    self.hudpage[5][2][1]= string.format("%d", self.turn_speed*3600)
+	    self.hudpage[5][2][2]= string.format("%d", self.field_speed*3600)
+	    self.hudpage[5][2][3]= string.format("%d", self.max_speed*3600)	
+		  self.hudpage[5][2][4]= string.format("%d", self.pFactor)
+
+		end
 	end-- end if show_hud
 end
 
@@ -200,25 +225,28 @@ function courseplay:showHud(self)
 		setTextBold(false)
 		local i = 0
         for v,name in pairs(self.hudinfo) do
-            local yspace = 0.292 - (i * 0.021)
-        	renderText(0.763, yspace, 0.017, name);
+            local yspace = self.hudInfoBasePosY + 0.077 - (i * 0.021)
+        	renderText(self.hudInfoBasePosX + 0.003, yspace, 0.017, name);
             i = i + 1
 		end
 
 
 		setTextBold(true)
 		if self.showHudInfoBase == 1 then
-			renderText(0.825, 0.408, 0.021, string.format("Tastenbelegung"));
+			renderText(self.hudInfoBasePosX + 0.065, self.hudInfoBasePosY + 0.193, 0.021, string.format("Tastenbelegung"));
 			courseplay:HudPage(self);
 		elseif self.showHudInfoBase == 2 then
-	        renderText(0.825, 0.408, 0.021, string.format("Kurs Optionen"));
+	        renderText(self.hudInfoBasePosX + 0.065, self.hudInfoBasePosY + 0.193, 0.021, string.format("Kurs Optionen"));
 	        courseplay:HudPage(self);
 	    elseif self.showHudInfoBase == 3 then
-	      	renderText(0.825, 0.408, 0.021, string.format("Einstellungen"));
+	      	renderText(self.hudInfoBasePosX + 0.065, self.hudInfoBasePosY + 0.193, 0.021, string.format("Einstellungen"));
 			courseplay:HudPage(self);
 		elseif self.showHudInfoBase == 4 then
-		    renderText(0.825, 0.408, 0.021, string.format("Geschwindigkeiten"));
+		    renderText(self.hudInfoBasePosX + 0.065, self.hudInfoBasePosY + 0.193, 0.021, string.format("Drescher"));
 		    courseplay:HudPage(self);
+		elseif self.showHudInfoBase == 5 then
+		  renderText(self.hudInfoBasePosX + 0.065, self.hudInfoBasePosY + 0.193, 0.021, string.format("Geschwindigkeiten"));
+		  courseplay:HudPage(self);
 		end
 	elseif self.play then
 	  -- hud not displayed - display start stop

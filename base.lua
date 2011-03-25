@@ -2,6 +2,39 @@ function courseplay.prerequisitesPresent(specializations)
 	return true;
 end
 
+-- from switcher.lua - edmund
+function courseplay:loadMap(name)
+  local aNameSearch = {"vehicle.name." .. g_languageShort, "vehicle.name.en", "vehicle.name", "vehicle#type"};
+
+  if Steerable.load ~= nil then
+    local orgSteerableLoad = Steerable.load
+
+    Steerable.load = function(self,xmlFile)
+    orgSteerableLoad(self,xmlFile)
+
+    for nIndex,sXMLPath in pairs(aNameSearch) do 
+      self.name = getXMLString(xmlFile, sXMLPath);
+      if self.name ~= nil then break; end;
+    end;
+    if self.name == nil then self.name = g_i18n:getText("UNKNOWN") end;
+    end;
+  end;
+
+  if Attachable.load ~= nil then
+     local orgAttachableLoad = Attachable.load
+
+     Attachable.load = function(self,xmlFile)
+     orgAttachableLoad(self,xmlFile)
+
+     for nIndex,sXMLPath in pairs(aNameSearch) do 
+       self.name = getXMLString(xmlFile, sXMLPath);
+       if self.name ~= nil then break; end;
+     end;
+    if self.name == nil then self.name = g_i18n:getText("UNKNOWN") end;
+    end
+  end;
+end;
+
 function courseplay:load(xmlFile)
 	self.locales = {}
 	
@@ -23,7 +56,6 @@ function courseplay:load(xmlFile)
 	self.locales.CourseMode3 = g_i18n:getText("CourseMode3")
 	self.locales.CourseMode4 = g_i18n:getText("CourseMode4")
 	self.locales.CourseMode5 = g_i18n:getText("CourseMode5")
-	
 	
 	self.lastGui = nil
 	self.currentGui = nil
@@ -63,7 +95,10 @@ function courseplay:load(xmlFile)
 	self.ai_state = 1
 	self.next_ai_state = nil
 	
+-- C.Schoch
 self.oldDistance = 100;
+self.pFactor = 3000;
+-- C.Schoch
 
 	self.wait = true
 	self.waitTimer = nil
@@ -100,6 +135,8 @@ self.oldDistance = 100;
 	self.max_speed = 50 / 3600
 	self.turn_speed = 10 / 3600
 	self.field_speed = 24 / 3600
+	
+	self.tools_dirty = false
 	
 	self.orgRpm = nil
 	
@@ -139,17 +176,6 @@ self.oldDistance = 100;
 	self.selected_course_number = 0
 	self.course_Del = false
 	
-	-- name search
-	local aNameSearch = {"vehicle.name." .. g_languageShort, "vehicle.name.de", "vehicle.name.en", "vehicle.name", "vehicle#type"};
-	
-	for nIndex,sXMLPath in pairs(aNameSearch) do 
-		self.name = getXMLString(xmlFile, sXMLPath);
-		if self.name ~= nil then 
-		break; 
-		end;
-	end;
-	
-	print("initialized courseplay for " .. self.name)
 	
 	-- combines
 	
@@ -173,9 +199,9 @@ self.oldDistance = 100;
 	
 
 	-- HUD  	-- Function in Signs
-	self.hudInfoBasePosX = 0.755; 
+	self.hudInfoBasePosX = 0.005; -- 0.755 
 	self.hudInfoBaseWidth = 0.24; 
-	self.hudInfoBasePosY = 0.215; 
+	self.hudInfoBasePosY = 0.005;  -- 0.210
 	self.hudInfoBaseHeight = 0.235; 
 	
 	self.infoPanelPath = Utils.getFilename("../aacourseplay/img/hud_bg.png", self.baseDirectory);
@@ -185,54 +211,63 @@ self.oldDistance = 100;
 	self.hudpage[1]  = {}
     self.hudpage[1][1]  = {}
     self.hudpage[1][2]  = {}
-    self.hudpage[2] = {}
+  self.hudpage[2] = {}
     self.hudpage[2][1]  = {}
     self.hudpage[2][2]  = {}
 	self.hudpage[3] = {}
     self.hudpage[3][1]  = {}
     self.hudpage[3][2]  = {}
-    self.hudpage[4] = {}
+  self.hudpage[4] = {}
     self.hudpage[4][1]  = {}
     self.hudpage[4][2]  = {}
+  self.hudpage[5] = {}
+    self.hudpage[5][1]  = {}
+    self.hudpage[5][2]  = {}
     self.hudinfo = {}
     
     self.show_hud = false
     
+    self.search_combine = true
+    self.saved_combine  = nil
+    
     -- buttons for hud    
-    courseplay:register_button(self, nil, "navigate_left.png", "switch_hud_page", -1, 0.79, 0.410, 0.020, 0.020)
-    courseplay:register_button(self, nil, "navigate_right.png", "switch_hud_page", 1, 0.96, 0.410, 0.020, 0.020)
+    courseplay:register_button(self, nil, "navigate_left.png", "switch_hud_page", -1, self.hudInfoBasePosX + 0.030, self.hudInfoBasePosY + 0.195, 0.020, 0.020)
+    courseplay:register_button(self, nil, "navigate_right.png", "switch_hud_page", 1, self.hudInfoBasePosX + 0.200, self.hudInfoBasePosY + 0.195, 0.020, 0.020)
     
-    courseplay:register_button(self, nil, "delete.png", "close_hud", 1, 0.978, 0.418, 0.016, 0.016)
+    courseplay:register_button(self, nil, "delete.png", "close_hud", 1, self.hudInfoBasePosX + 0.218, self.hudInfoBasePosY + 0.203, 0.016, 0.016)
     
-    courseplay:register_button(self, 1, "blank.png", "row1", nil, 0.75, 0.385, 0.32, 0.015)
-    courseplay:register_button(self, 1, "blank.png", "row2", nil, 0.75, 0.363, 0.32, 0.015)
-    courseplay:register_button(self, 1, "blank.png", "row3", nil, 0.75, 0.342, 0.32, 0.015)
+    courseplay:register_button(self, 1, "blank.png", "row1", nil, self.hudInfoBasePosX-0.05, self.hudInfoBasePosY + 0.170, 0.32, 0.015)
+    courseplay:register_button(self, 1, "blank.png", "row2", nil, self.hudInfoBasePosX-0.05, self.hudInfoBasePosY + 0.148, 0.32, 0.015)
+    courseplay:register_button(self, 1, "blank.png", "row3", nil, self.hudInfoBasePosX-0.05, self.hudInfoBasePosY + 0.127, 0.32, 0.015)
     
-    courseplay:register_button(self, 2, "blank.png", "row1", nil, 0.75, 0.385, 0.32, 0.015)
-    courseplay:register_button(self, 2, "blank.png", "row2", nil, 0.75, 0.363, 0.32, 0.015)
-    courseplay:register_button(self, 2, "blank.png", "row3", nil, 0.75, 0.342, 0.32, 0.015)
+    courseplay:register_button(self, 2, "blank.png", "row1", nil, self.hudInfoBasePosX-0.05, self.hudInfoBasePosY + 0.170, 0.32, 0.015)
+    courseplay:register_button(self, 2, "blank.png", "row2", nil, self.hudInfoBasePosX-0.05, self.hudInfoBasePosY + 0.148, 0.32, 0.015)
+    courseplay:register_button(self, 2, "blank.png", "row3", nil, self.hudInfoBasePosX-0.05, self.hudInfoBasePosY + 0.127, 0.32, 0.015)
     
-    courseplay:register_button(self, 3, "navigate_minus.png", "change_combine_offset", -0.1, 0.955, 0.388, 0.010, 0.010)
-    courseplay:register_button(self, 3, "navigate_plus.png", "change_combine_offset", 0.1, 0.97, 0.388, 0.010, 0.010)
+    courseplay:register_button(self, 3, "navigate_minus.png", "change_combine_offset", -0.1, self.hudInfoBasePosX + 0.195, self.hudInfoBasePosY + 0.173, 0.010, 0.010)
+    courseplay:register_button(self, 3, "navigate_plus.png", "change_combine_offset", 0.1, self.hudInfoBasePosX + 0.210, self.hudInfoBasePosY +0.173, 0.010, 0.010)
     
-    courseplay:register_button(self, 3, "navigate_minus.png", "change_required_fill_level", -5, 0.955, 0.366, 0.010, 0.010)
-    courseplay:register_button(self, 3, "navigate_plus.png", "change_required_fill_level", 5, 0.97, 0.366, 0.010, 0.010)
+    courseplay:register_button(self, 3, "navigate_minus.png", "change_required_fill_level", -5, self.hudInfoBasePosX + 0.195, self.hudInfoBasePosY +0.151, 0.010, 0.010)
+    courseplay:register_button(self, 3, "navigate_plus.png", "change_required_fill_level", 5, self.hudInfoBasePosX + 0.210, self.hudInfoBasePosY +0.151, 0.010, 0.010)
     
-    courseplay:register_button(self, 3, "navigate_minus.png", "change_turn_radius", -1, 0.955, 0.345, 0.010, 0.010)
-    courseplay:register_button(self, 3, "navigate_plus.png", "change_turn_radius", 1, 0.97, 0.345, 0.010, 0.010)
+    courseplay:register_button(self, 3, "navigate_minus.png", "change_turn_radius", -1, self.hudInfoBasePosX + 0.195, self.hudInfoBasePosY +0.130, 0.010, 0.010)
+    courseplay:register_button(self, 3, "navigate_plus.png", "change_turn_radius", 1, self.hudInfoBasePosX + 0.210, self.hudInfoBasePosY +0.130, 0.010, 0.010)
     
-    courseplay:register_button(self, 3, "navigate_minus.png", "change_tipper_offset", -0.5, 0.955, 0.324, 0.010, 0.010)
-    courseplay:register_button(self, 3, "navigate_plus.png", "change_tipper_offset", 0.5, 0.97, 0.324, 0.010, 0.010)
+    courseplay:register_button(self, 3, "navigate_minus.png", "change_tipper_offset", -0.5, self.hudInfoBasePosX + 0.195, self.hudInfoBasePosY + 0.109, 0.010, 0.010)
+    courseplay:register_button(self, 3, "navigate_plus.png", "change_tipper_offset", 0.5, self.hudInfoBasePosX + 0.210, self.hudInfoBasePosY +0.109, 0.010, 0.010)
     
     
-    courseplay:register_button(self, 4, "navigate_minus.png", "change_turn_speed", -1, 0.955, 0.388, 0.010, 0.010)
-    courseplay:register_button(self, 4, "navigate_plus.png", "change_turn_speed", 1, 0.97, 0.388, 0.010, 0.010)
+    courseplay:register_button(self, 5, "navigate_minus.png", "change_turn_speed", -1, self.hudInfoBasePosX + 0.195, self.hudInfoBasePosY +0.173, 0.010, 0.010)
+    courseplay:register_button(self, 5, "navigate_plus.png", "change_turn_speed", 1, self.hudInfoBasePosX + 0.210, self.hudInfoBasePosY +0.173, 0.010, 0.010)
     
-    courseplay:register_button(self, 4, "navigate_minus.png", "change_field_speed", -1, 0.955, 0.366, 0.010, 0.010)
-    courseplay:register_button(self, 4, "navigate_plus.png", "change_field_speed", 1, 0.97, 0.366, 0.010, 0.010)
+    courseplay:register_button(self, 5, "navigate_minus.png", "change_field_speed", -1, self.hudInfoBasePosX + 0.195, self.hudInfoBasePosY +0.151, 0.010, 0.010)
+    courseplay:register_button(self, 5, "navigate_plus.png", "change_field_speed", 1, self.hudInfoBasePosX + 0.210, self.hudInfoBasePosY +0.151, 0.010, 0.010)
     
-    courseplay:register_button(self, 4, "navigate_minus.png", "change_max_speed", -1, 0.955, 0.345, 0.010, 0.010)
-    courseplay:register_button(self, 4, "navigate_plus.png", "change_max_speed", 1, 0.97, 0.345, 0.010, 0.010)
+    courseplay:register_button(self, 5, "navigate_minus.png", "change_max_speed", -1, self.hudInfoBasePosX + 0.195, self.hudInfoBasePosY +0.130, 0.010, 0.010)
+    courseplay:register_button(self, 5, "navigate_plus.png", "change_max_speed", 1, self.hudInfoBasePosX + 0.210, self.hudInfoBasePosY +0.130, 0.010, 0.010)
+		
+		courseplay:register_button(self, 5, "navigate_minus.png", "change_p_factor", -100, self.hudInfoBasePosX + 0.195, self.hudInfoBasePosY +0.109, 0.010, 0.010)
+    courseplay:register_button(self, 5, "navigate_plus.png", "change_p_factor", 100, self.hudInfoBasePosX + 0.210, self.hudInfoBasePosY +0.109, 0.010, 0.010)
     
 end	
 
@@ -252,6 +287,7 @@ end
 -- displays help text, user_input 	
 function courseplay:draw()
 	courseplay:loadHud(self)
+	
 		
 	if self.dcheck and table.getn(self.Waypoints) > 1 then
 		courseplay:dcheck(self);
@@ -282,7 +318,11 @@ end
 
 -- is been called everey frame
 function courseplay:update(dt)
-
+	--attached or detached implement?
+	if self.tools_dirty then
+	  courseplay:reset_tools(self)
+	end
+	
 	--if self.user_input_active == true then
 	--  if self.currentGui == nil then
 	--    g_gui:loadGui(Utils.getFilename("../aacourseplay/emptyGui.xml", self.baseDirectory), self.input_gui);
@@ -310,12 +350,7 @@ function courseplay:update(dt)
 	if self.record then 
 		courseplay:record(self);
 	end
-	
-	--attached or detached implement?
-	if self.aiToolsDirty then
-	  courseplay:reset_tools(self)
-	end
-	
+		
 	-- we are in drive mode
 	if self.drive then
 		courseplay:drive(self, dt);

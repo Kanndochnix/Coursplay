@@ -12,8 +12,8 @@ function courseplay:switch_hud_page(self, change_by)
     self.showHudInfoBase = 1
    end
 
-   if self.showHudInfoBase == 5 then  --edit for more sites
-     self.showHudInfoBase = 4
+   if self.showHudInfoBase == 6 then  --edit for more sites
+     self.showHudInfoBase = 5
    end
 end
 
@@ -89,4 +89,8 @@ function courseplay:change_max_speed(self, change_by)
     speed = 1
   end
   self.max_speed = speed / 3600
+end
+
+function courseplay:change_p_factor(self, change_by)
+  self.pFactor = self.pFactor + change_by
 end

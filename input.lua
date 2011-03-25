@@ -53,7 +53,11 @@ function courseplay:mouseEvent(posX, posY, isDown, isUp, button)
           if func == "change_max_speed" then
             courseplay:change_max_speed(self, button.parameter)
           end
-          
+					
+          if func == "change_p_factor" then
+            courseplay:change_p_factor(self, button.parameter)
+          end
+					
           if func == "close_hud" then
             self.mouse_enabled = false
             self.show_hud = false

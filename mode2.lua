@@ -31,7 +31,7 @@ function courseplay:handle_mode2(self, dt)
   	self.ai_state = 1
   	self.loaded = true
   	return false
-  end  
+  end
   
   -- support multiple tippers  
   if self.currentTrailerToFill == nil then
@@ -54,7 +54,6 @@ function courseplay:handle_mode2(self, dt)
         end
         -- ai_state when waypoint is reached
 		self.ai_state = 5
-		courseplay:unregister_at_combine(self, self.active_combine)
         self.next_ai_state = 8
       end
     end
@@ -259,7 +258,6 @@ function courseplay:unload_combine(self, dt)
 	    self.info_text ="Fahre zum Drescher"
 	  end   
 	  
-	  --self.sl = 2
 	  refSpeed = self.field_speed
 	
 	  if combine_fill_level == 0 then
@@ -550,17 +548,31 @@ function courseplay:unload_combine(self, dt)
 	  end
   end 
 
-	if self.target_x ~= nil and self.target_z ~= nil and self.mySign1 == nil then
-		self.mySign1 = courseplay:addsign(self, self.target_x, 0, self.target_z);
+	if self.target_x ~= nil and self.target_z ~= nil then	
+		if self.oldCX1 == nil and self.oldCZ1	== nil then
+			self.mySign1 = courseplay:addsign(self, self.target_x, 0, self.target_z);
+		elseif self.oldCX1 ~= self.target_x or self.oldCZ1 ~= self.target_z then
+			if self.mySign1 ~= nil then
+				delete(self.mySign1);
+				for k,v in pairs(self.signs) do    
+					if v == self.mySign1 then
+						table.remove(self.signs, k);
+					end;
+				end
+			end;
+			self.mySign1 = courseplay:addsign(self, self.target_x, 0, self.target_z);
+		end;
 	elseif self.mySign1 ~= nil and self.target_x == nil and self.target_z == nil then
-			delete(self.mySign1);
-			for k,v in pairs(self.signs) do    
-				if v == self.mySign1 then
-					table.remove(self.signs, k);
-				end;
-			end
-			self.mySign1 = nil;
-	end;	
+		delete(self.mySign1);
+		for k,v in pairs(self.signs) do    
+			if v == self.mySign1 then
+				table.remove(self.signs, k);
+			end;
+		end
+		self.mySign1 = nil;
+	end;
+		self.oldCX1 = self.target_x;
+		self.oldCZ1 = self.target_z;
 	
   self.ai_state = mode  
   
@@ -586,7 +598,7 @@ function courseplay:unload_combine(self, dt)
 		
 		if self.speedControlTimer <= 0 then
 			local difference = refSpeed - real_speed;
-		  local deviation = (difference * 3000);
+		  local deviation = (difference * self.pFactor);
 		
 			maxRpm = maxRpm + deviation;
 			
