@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<modDesc descVersion="4">
+   <author>Lautschreier/Hummel (modhoster.de)</author>
+    <title>
+		<en>Courseplay - Abfahrhelfer</en>
+        <de>Courseplay - Abfahrhelfer</de>        
+    </title>
+    <description>
+        <en>
+		<![CDATA[Courseplay
+		Grundversion: Lautschreier
+		Script: Hummel 
+		www.modhoster.de]]>
+		</en>
+   	<de>
+		<![CDATA[Courseplay
+		Grundversion: Lautschreier
+		Script: Hummel 
+		www.modhoster.de]]>
+		</de>
+ 	</description>
+    	<multiplayer supported="false"/>   
+	<iconFilename>
+		<en>store.png</en>
+		<de>store.png</de>
+ 	</iconFilename>
+	<version>0.98</version>
+    <l10n>
+	<text name="PointRecordStart">
+		<en>Record Course Start</en>
+		<de>Neuer Kurs</de>
+	</text>
+
+	<text name="PointRecordStop">
+		<en>Record Course Stop</en>
+		<de>Endpunkt Kurs</de>
+	</text>
+
+	<text name="CoursePlayStart">
+		<en>Drive Course</en>
+		<de>Start Helfer</de>
+	</text>
+
+	<text name="CoursePlayStop">
+		<en>Drive stop</en>
+		<de>Stop Helfer</de>
+	</text>
+	
+	<text name="CourseMode1">
+		<en>Type: Drivinghelper</en>
+		<de>Typ: Abfahrer</de>
+	</text>
+
+	<text name="CourseMode2">
+		<en>Type: Combi</en>
+		<de>Typ: Combi</de>
+	</text>
+
+	<text name="CourseMode3">
+		<en>Type: Overloader</en>
+		<de>Typ: Überladewagen</de>
+	</text>
+
+	<text name="CourseMode4">
+		<en>Type: Target</en>
+		<de>Typ: Überführung</de>
+	</text>
+
+	<text name="CourseWaitpointSet">
+		<en>set waitpoint</en>
+		<de>Wartepunkt setzen</de>
+	</text>	
+
+	<text name="CourseWaitpointStart">
+		<en>start</en>
+		<de>weiterfahren</de>
+	</text> 
+
+	<text name="CourseSave">
+		<en>save course</en>
+		<de>Kurs speichern</de>
+	</text>	
+
+	<text name="CourseLoad">
+		<en>load course</en>
+		<de>Kurs laden</de>
+	</text>
+
+	<text name="CourseDel">
+		<en>delete course</en>
+		<de>Kurs löschen</de>
+	</text>
+
+	<text name="CourseReset">
+		<en>reset course</en>
+		<de>Wegpunkte löschen</de>
+	</text>
+
+	<text name="HudControl">
+		<en>Courseplay HUD</en>
+		<de>Courseplay HUD</de>
+	</text>
+	
+	<text name="MouseControl">
+		<en>Switch Mousecontrol</en>
+		<de>Maussteuerung aktivieren</de>
+	</text>
+
+	<text name="ModusSet">
+		<en>change Modus</en>
+		<de>Modus wechseln</de>				
+	</text>
+
+	<text name="NoWaitforfill">
+		<en>Drive now</en>
+		<de>Sofort abfahren</de>				
+	</text>
+
+
+	<text name="AHInput1">
+		<en>AH Input 1</en>
+		<de>AH Taste 1</de>				
+	</text>
+
+	<text name="AHInput2">
+		<en>AH Input 2</en>
+		<de>AH Taste 2</de>				
+	</text>
+
+	<text name="AHInput3">
+		<en>AH Input 3</en>
+		<de>AH Taste 3</de>				
+	</text>
+
+	<text name="AHInput4">
+		<en>AH Input 4</en>
+		<de>AH Taste 4</de>				
+	</text>
+
+    </l10n>
+
+	<extraSourceFiles>
+        <sourceFile filename="register.lua" />
+		<sourceFile filename="base.lua" />
+		<sourceFile filename="button.lua" />
+		<sourceFile filename="combines.lua" />
+		<sourceFile filename="course_management.lua" />
+		<sourceFile filename="debug.lua" />
+		<sourceFile filename="distance.lua" />
+		<sourceFile filename="drive.lua" />
+		<sourceFile filename="global.lua" />
+		<sourceFile filename="input.lua" />
+		<sourceFile filename="mode1.lua" />
+		<sourceFile filename="mode2.lua" />
+		<sourceFile filename="recording.lua" />
+		<sourceFile filename="signs.lua" />
+		<sourceFile filename="start_stop.lua" />
+		<sourceFile filename="tippers.lua" />
+		<sourceFile filename="triggers.lua" />
+		<sourceFile filename="hud.lua" />
+		<sourceFile filename="settings.lua" />
+    </extraSourceFiles>   
+
+	<inputBindings>
+		<input name="HudControl" category="VEHICLE" key1="KEY_KP_0" key2="" button="" device="0" mouse="" />
+		<input name="MouseControl" category="VEHICLE" key1="KEY_KP_1" key2="" button="" device="0" mouse="" />	
+		<input name="AHInput1" category="VEHICLE" key1="KEY_KP_7" key2="" button="" device="0" mouse="" />
+		<input name="AHInput2" category="VEHICLE" key1="KEY_KP_8" key2="" button="" device="0" mouse="" />
+		<input name="AHInput3" category="VEHICLE" key1="KEY_KP_9" key2="" button="" device="0" mouse="" />
+		<input name="AHInput4" category="VEHICLE" key1="KEY_KP_5" key2="" button="" device="0" mouse="" />
+
+    </inputBindings>
+    
+</modDesc>
