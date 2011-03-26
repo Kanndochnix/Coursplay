@@ -104,7 +104,7 @@ function courseplay:unload_tippers(self)
     local trigger_id = self.currentTipTrigger.triggerId
 	    
     if self.currentTipTrigger.specialTriggerId ~= nil then
-    trigger_id = self.currentTipTrigger.specialTriggerId
+      trigger_id = self.currentTipTrigger.specialTriggerId
     end
     local trigger_x, trigger_y, trigger_z = getWorldTranslation(trigger_id)
     

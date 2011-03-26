@@ -91,6 +91,30 @@ function courseplay:change_max_speed(self, change_by)
   self.max_speed = speed / 3600
 end
 
-function courseplay:change_p_factor(self, change_by)
-  self.pFactor = self.pFactor + change_by
+
+function courseplay:switch_search_combine(self)
+  self.search_combine = not self.search_combine
+end
+
+function courseplay:switch_combine(self, change_by)
+  local combines = courseplay:find_combines(self)
+  
+  local selected_combine_number = self.selected_combine_number + change_by
+  
+  if selected_combine_number < 0 then
+    selected_combine_number = 0
+  end
+  
+  if selected_combine_number > table.getn(combines) then
+    selected_combine_number = table.getn(combines)
+  end
+  
+  self.selected_combine_number = selected_combine_number
+  
+  if self.selected_combine_number == 0 then
+  	self.saved_combine = nil
+  else
+    self.saved_combine = combines[self.selected_combine_number]
+  end
+  
 end

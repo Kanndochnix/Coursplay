@@ -53,11 +53,15 @@ function courseplay:mouseEvent(posX, posY, isDown, isUp, button)
           if func == "change_max_speed" then
             courseplay:change_max_speed(self, button.parameter)
           end
-					
-          if func == "change_p_factor" then
-            courseplay:change_p_factor(self, button.parameter)
+          
+          if func == "switch_search_combine" then
+            courseplay:switch_search_combine(self)
           end
-					
+          
+          if func == "switch_combine" then
+            courseplay:switch_combine(self, button.parameter)
+          end
+          
           if func == "close_hud" then
             self.mouse_enabled = false
             self.show_hud = false
@@ -77,7 +81,9 @@ function courseplay:mouseEvent(posX, posY, isDown, isUp, button)
 	                  courseplay:start(self)
 	                end 
 	              else -- not drving          
-	                if self.Waypoints[self.recordnumber].wait and self.wait and func == "row2" then
+	                if self.recordnumber ~= nil and self.Waypoints[self.recordnumber].wait and self.wait and func == "row2" then
+	                  self.wait = false
+	                elseif self.recordnumber == nil and self.Waypoints[self.recordnumber].wait and self.wait and func == "row2" then
 	                  self.wait = false
 	                end
 	                
