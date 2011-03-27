@@ -26,7 +26,7 @@ function courseplay:display_course_selection(self)
 	
 	renderText(0.4, yspace ,0.02, name .. addit);
   end
-  
+  self.selected_course_number = math.min(self.selected_course_number, i);
 end
 
 function courseplay:select_course(self)

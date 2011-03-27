@@ -186,9 +186,7 @@ function courseplay:keyEvent(unicode, sym, modifier, isDown)
 	end
 	
 	if sym == 274 then
-	  if self.selected_course_number < 10 then
-		self.selected_course_number = self.selected_course_number + 1
-	  end
+	  self.selected_course_number = self.selected_course_number + 1
 	end
   end
 end;	
