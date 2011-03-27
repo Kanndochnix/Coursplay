@@ -20,26 +20,31 @@ function courseplay:start(self)
 	self.dcheck = true
 	-- current position
 	local ctx,cty,ctz = getWorldTranslation(self.rootNode);
+	
+	-- C.Schoch
 	-- positoin of next waypoint
 --[[ 	local cx ,cz = self.Waypoints[self.recordnumber].cx,self.Waypoints[self.recordnumber].cz
 	-- distance
 	dist = courseplay:distance(ctx ,ctz ,cx ,cz)]]	
 	
-	local cx ,cz;
-	local distance = nil;
-	for k,Point in pairs(self.Waypoints) do
-		cx ,cz = Point.cx,Point.cz;
-		local dist = courseplay:distance(ctx ,ctz ,cx ,cz);
-		if distance == nil or dist < distance then
-			distance = dist;
-			self.recordnumber = k + 1;
+	if (self.ai_mode == 1 and self.tipper_attached) or (self.loaded and self.ai_mode == 2) then
+		local cx ,cz;
+		local distance = nil;
+		for k,Point in pairs(self.Waypoints) do
+			cx ,cz = Point.cx,Point.cz;
+			local dist = courseplay:distance(ctx ,ctz ,cx ,cz);
+			if distance == nil or dist < distance then
+				distance = dist;
+				self.recordnumber = k + 1;
+			end;
+		end;
+		
+		if self.recordnumber > table.getn(self.Waypoints) then
+			self.recordnumber = 1
 		end;
 	end;
+	-- C.Schoch
 	
-	if self.recordnumber > table.getn(self.Waypoints) then
-		self.recordnumber = 1
-	end;
-		
 	--if dist < 15 then
 		-- hire a helper
 		self:hire()

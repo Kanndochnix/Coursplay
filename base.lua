@@ -11,37 +11,49 @@ function courseplay:load(xmlFile)
 	if not steerable_overwritten then	  
 	  steerable_overwritten = true
 	  if Steerable.load ~= nil then
-		local orgSteerableLoad = Steerable.load
-		print("overwriting steerable.load")
-		Steerable.load = function(self,xmlFile)
-		orgSteerableLoad(self,xmlFile)
+			local orgSteerableLoad = Steerable.load
+			print("overwriting steerable.load")
+			Steerable.load = function(self,xmlFile)
+				orgSteerableLoad(self,xmlFile)
 
-		for nIndex,sXMLPath in pairs(aNameSearch) do 
-		  self.name = getXMLString(xmlFile, sXMLPath);
-		  if self.name ~= nil then break; end;
+				for nIndex,sXMLPath in pairs(aNameSearch) do 
+					self.name = getXMLString(xmlFile, sXMLPath);
+					if self.name ~= nil then 
+						break; 
+					end;
+				end;
+				if self.name == nil then 
+					self.name = g_i18n:getText("UNKNOWN") 
+				end;
+			end;
 		end;
-		if self.name == nil then self.name = g_i18n:getText("UNKNOWN") end;
+
+		if Attachable.load ~= nil then
+			print("overwriting Attachable.load")
+			local orgAttachableLoad = Attachable.load
+
+			Attachable.load = function(self,xmlFile)
+				orgAttachableLoad(self,xmlFile)
+
+				for nIndex,sXMLPath in pairs(aNameSearch) do 
+					self.name = getXMLString(xmlFile, sXMLPath);
+					if self.name ~= nil then
+						break;
+					end;
+				end;
+				if self.name == nil then 
+					self.name = g_i18n:getText("UNKNOWN") 
+				end;
+				
+				self.tipper_offset = getXMLFloat(xmlFile, "vehicle.tipperOffset"); 
+				
+			end
+			
 		end;
-	  end;
-
-	  if Attachable.load ~= nil then
-		print("overwriting Attachable.load")
-		 local orgAttachableLoad = Attachable.load
-
-		 Attachable.load = function(self,xmlFile)
-		 orgAttachableLoad(self,xmlFile)
-
-		 for nIndex,sXMLPath in pairs(aNameSearch) do 
-		   self.name = getXMLString(xmlFile, sXMLPath);
-		   if self.name ~= nil then break; end;
-		 end;
-		if self.name == nil then self.name = g_i18n:getText("UNKNOWN") end;
-		end
-	  end;
 	
 	end
 	
-	if self.name == nilo then
+	if self.name == nil then
 	  for nIndex,sXMLPath in pairs(aNameSearch) do 
 	    self.name = getXMLString(xmlFile, sXMLPath);
 	    if self.name ~= nil then break; end;
