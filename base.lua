@@ -41,7 +41,7 @@ function courseplay:load(xmlFile)
 	
 	end
 	
-	if self.name == nil then
+	if self.name == nilo then
 	  for nIndex,sXMLPath in pairs(aNameSearch) do 
 	    self.name = getXMLString(xmlFile, sXMLPath);
 	    if self.name ~= nil then break; end;

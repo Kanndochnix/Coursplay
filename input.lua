@@ -80,10 +80,16 @@ function courseplay:mouseEvent(posX, posY, isDown, isUp, button)
 	                if func == "row1" then
 	                  courseplay:start(self)
 	                end 
-	              else -- not drving          
-	                if self.recordnumber ~= nil and self.Waypoints[self.recordnumber].wait and self.wait and func == "row2" then
-	                  self.wait = false
-	                elseif self.recordnumber == nil and self.Waypoints[self.recordnumber].wait and self.wait and func == "row2" then
+	              else -- not drving     
+	              	 local last_recordnumber = nil
+  
+	              	 if self.recordnumber > 1 then
+	              	   last_recordnumber = self.recordnumber - 1    
+	              	 else
+  					   last_recordnumber = 1
+  					 end
+  					      
+	                if last_recordnumber ~= nil and self.Waypoints[last_recordnumber].wait and self.wait and func == "row2" then
 	                  self.wait = false
 	                end
 	                
@@ -103,9 +109,6 @@ function courseplay:mouseEvent(posX, posY, isDown, isUp, button)
 	                  courseplay:start_record(self)
 	                end
 	                
-	                if func == "row2" then
-	                  courseplay:select_course(self)
-	                end
 	              elseif not self.record and (table.getn(self.Waypoints) ~= 0) then
 	              	if func == "row2" then
 	              	  courseplay:change_ai_state(self, 1)

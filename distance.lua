@@ -39,15 +39,15 @@ function courseplay:dcheck(self)
     return
   end
   local cx ,cz = self.Waypoints[self.recordnumber].cx, self.Waypoints[self.recordnumber].cz
-  print("dcheck")
+  
   dist = courseplay:distance(ctx ,ctz ,cx ,cz)
-  print("dcheck not schuld")
+  
   self.info_text = string.format("entfernung: %d ",dist )  
 end;
 
 function courseplay:distance_to_object(self, object)
-  local x, y, z = getWorldTranslation(self.aiTractorDirectionNode)
-  local ox, oy, oz = localToWorld(object.rootNode, x, y, z)
+  local x, y, z = getWorldTranslation(self.rootNode)
+  local ox, oy, oz = worldToLocal(object.rootNode, x, y, z)
   
   return Utils.vector2Length(ox, oz)  
 end

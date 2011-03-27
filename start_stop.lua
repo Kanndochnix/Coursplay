@@ -49,7 +49,10 @@ function courseplay:start(self)
 		if self.aiTrafficCollisionTrigger ~= nil then
 		   addTrigger(self.aiTrafficCollisionTrigger, "onTrafficCollisionTrigger", self);
 		end
-		self.orgRpm = self.motor.maxRpm
+		self.orgRpm = {} 
+		self.orgRpm[1] = self.motor.maxRpm[1] 
+		self.orgRpm[2] = self.motor.maxRpm[2] 
+		self.orgRpm[3] = self.motor.maxRpm[3] 
 		self.record = false
 		self.dcheck = false
 	--end
@@ -58,7 +61,9 @@ end
 -- stops driving the course
 function courseplay:stop(self)
 	self:dismiss()
-	self.motor.maxRpm = self.orgRpm
+	self.motor.maxRpm[1] = self.orgRpm[1] 
+	self.motor.maxRpm[2] = self.orgRpm[2] 
+	self.motor.maxRpm[3] = self.orgRpm[3] 
 	self.record = false
 	
 	-- removing collision trigger
