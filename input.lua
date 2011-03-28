@@ -16,7 +16,7 @@ function courseplay:mouseEvent(posX, posY, isDown, isUp, button)
     --print(string.format("posX: %f posY: %f",posX,posY))
     
     for _,button in pairs(self.buttons) do
-      if button.page == self.showHudInfoBase or button.page == nil then
+      if button.page == self.showHudInfoBase or button.page == nil or button.page == self.showHudInfoBase*-1  then
         
         if posX > button.x and posX < button.x2 and posY > button.y and posY < button.y2 then
           local func = button.function_to_call
@@ -28,6 +28,18 @@ function courseplay:mouseEvent(posX, posY, isDown, isUp, button)
           
           if func == "change_combine_offset" then
             courseplay:change_combine_offset(self, button.parameter)
+          end
+          
+          if func == "load_course" then
+            courseplay:load_course(self, button.parameter)
+          end
+          
+          if func == "save_course" then
+            courseplay:input_course_name(self)
+          end
+          
+          if func == "clear_course" then
+            courseplay:clear_course(self, button.parameter)
           end
           
           if func == "change_turn_radius" then
@@ -56,6 +68,10 @@ function courseplay:mouseEvent(posX, posY, isDown, isUp, button)
           
           if func == "switch_search_combine" then
             courseplay:switch_search_combine(self)
+          end
+          
+          if func == "change_selected_course" then
+            courseplay:change_selected_course(self, button.parameter)
           end
           
           if func == "switch_combine" then
@@ -125,20 +141,6 @@ function courseplay:mouseEvent(posX, posY, isDown, isUp, button)
             	end
             end
             
-            if self.showHudInfoBase == 2 then
-              if func == "row2" then
-                courseplay:select_course(self)
-              end
-              
-              if func == "row3" then
-                -- TODO delete coming soon
-              end
-              
-              if func == "row1" and not self.record and (table.getn(self.Waypoints) ~= 0) then
-                courseplay:input_course_name(self)
-              end              
-            end
-            
           end
           
         end
@@ -172,23 +174,6 @@ function courseplay:keyEvent(unicode, sym, modifier, isDown)
 	end
   end
   
-  if isDown and self.course_selection_active then
-	-- enter
-	if sym == 13 then
-		self.select_course = true
-		courseplay:handle_user_input(self)
-	end
-	
-	if sym == 273 then
-	  if self.selected_course_number > 1 then
-		self.selected_course_number = self.selected_course_number - 1
-	  end
-	end
-	
-	if sym == 274 then
-	  self.selected_course_number = self.selected_course_number + 1
-	end
-  end
 end;	
 
 
@@ -200,28 +185,12 @@ function courseplay:handle_user_input(self)
 	   courseplay:load_courses(self)
 	   self.user_input_active = false
 	   self.current_course_name = self.user_input
+	   course = {name =self.current_course_name, waypoints = self.Waypoints}
+	   table.insert(self.courses, course)
 	   self.user_input = ""	   
 	   self.user_input_message = nil
-	   self.courses[self.current_course_name] = self.Waypoints
+	   
 	   courseplay:save_courses(self)
-	end
-	
-	if self.select_course then
-		self.course_selection_active = false
-		if self.current_course_name ~= nil then
-		  courseplay:reset_course(self)
-		  self.Waypoints = self.courses[self.current_course_name]
-		  self.play = true
-		  self.recordnumber = 1
-		  self.maxnumber = table.getn(self.Waypoints)
-		  
-		  -- this adds the signs to the course
-		  for k,wp in pairs(self.Waypoints) do
-			  if k <= 3 or wp.wait == true then
-			  	courseplay:addsign(self, wp.cx, 0, wp.cz)
-			  end
-		  end
-		end
 	end
 end
 

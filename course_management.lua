@@ -3,38 +3,45 @@
 
 -- enables input for course name
 function courseplay:input_course_name(self)
- self.user_input = ""
- self.user_input_active = true
- self.save_name = true
- self.user_input_message = "Name des Kurses: "
+ if table.getn(self.Waypoints) > 0 then
+   self.user_input = ""
+   self.user_input_active = true
+   self.save_name = true
+   self.user_input_message = courseplay:get_locale(self, "CPCourseName")
+ end
 end
 
-
-function courseplay:display_course_selection(self)
-  self.current_course_name = nil
-  renderText(0.4, 0.9 ,0.02, "Kurs Laden:");
-  
-  local i = 0
-  for name,wps in pairs(self.courses) do
-    local addit = ""
-	i = i + 1
-	if self.selected_course_number == i then
-	  addit = " <<<< "
-	  self.current_course_name = name
-	end
-	local yspace = 0.9 - (i * 0.022)
-	
-	renderText(0.4, yspace ,0.02, name .. addit);
+function courseplay:load_course(self, id)
+  if id ~= nil then
+    id = self.selected_course_number + id
+  	local course = self.courses[id]
+  	if course == nil then
+  	  return
+  	end
+  	courseplay:reset_course(self)
+  	self.Waypoints = course.waypoints
+	self.play = true
+	self.recordnumber = 1
+	self.maxnumber = table.getn(self.Waypoints)
+  	self.current_course_name = course.name
+	-- this adds the signs to the course
+	for k,wp in pairs(self.Waypoints) do
+  	  if k <= 3 or wp.wait == true then
+  		courseplay:addsign(self, wp.cx, 0, wp.cz)
+  	  end
+    end
   end
-  self.selected_course_number = math.min(self.selected_course_number, i);
 end
 
-function courseplay:select_course(self)
-  if self.course_selection_active then
-	self.course_selection_active = false
-  else
-	courseplay:load_courses(self)
-	self.course_selection_active = true
+function courseplay:clear_course(self, id)
+  if id ~= nil then
+    id = self.selected_course_number + id
+    local course = self.courses[id]
+    if course == nil then
+      return
+    end
+    table.remove(self.courses, id)
+    courseplay:save_courses(self)
   end
 end
 
@@ -45,21 +52,26 @@ function courseplay:save_courses(self)
   local tab = "   "
   if File ~= nil then
     File:write("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"no\" ?>\n<XML>\n<courses>\n")
-    for name,x in pairs(self.courses) do
-      File:write(tab .. "<course name=\"" .. name .. "\">\n")
-      for i = 1, table.getn(x) do
-        local v = x[i]
-		local wait = 0
-		if v.wait then
-		  wait = "1"
-		else
-		  wait = "0"
-		end
-        File:write(tab .. tab .. "<waypoint" .. i .. " pos=\"" .. v.cx .. " " .. v.cz .. "\" angle=\"" .. v.angle .. "\" wait=\"" .. wait .. "\" />\n")
+    for _,course in pairs(self.courses) do
+      if course ~= nil then
+	      local name = course.name
+	      local x = course.waypoints
+	      File:write(tab .. "<course name=\"" .. name .. "\">\n")
+	      for i = 1, table.getn(x) do
+	        local v = x[i]
+			local wait = 0
+			if v.wait then
+			  wait = "1"
+			else
+			  wait = "0"
+			end
+	        File:write(tab .. tab .. "<waypoint" .. i .. " pos=\"" .. v.cx .. " " .. v.cz .. "\" angle=\"" .. v.angle .. "\" wait=\"" .. wait .. "\" />\n")
+	      end
+	      File:write(tab .. "</course>\n")
       end
-      File:write(tab .. "</course>\n")
     end
     File:write("</courses>\n")
+    
     
     File:write("\n</XML>\n")
     File:close()
@@ -106,7 +118,8 @@ function courseplay:load_courses(self)
 			tempCourse[s] = {cx = x, cz = z, angle = dangle, wait = wait}
 			s = s + 1
 		  else
-			self.courses[name] = tempCourse
+		    local course = {name= name, waypoints=tempCourse}
+		    table.insert(self.courses, course)
 			i = i + 1
 			finish_wp = true
 			break

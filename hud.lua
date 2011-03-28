@@ -8,10 +8,10 @@ function courseplay:HudPage(self)
     for v,name in pairs(self.hudpage[Page][c]) do
       if c == 1 then
         local yspace = self.hudInfoBasePosY + 0.200 - ((v-1) * 0.021)
-        renderText(self.hudInfoBasePosX + 0.003, yspace, 0.019, name);
+        renderText(self.hudInfoBasePosX + 0.005, yspace, 0.019, name);
       elseif c == 2 then
        local yspace = self.hudInfoBasePosY + 0.200 - ((v-1) * 0.021)
-       renderText(self.hudInfoBasePosX + 0.120, yspace, 0.017, name);
+       renderText(self.hudInfoBasePosX + 0.122, yspace, 0.017, name);
       end
      i = i + 1
     end
@@ -23,6 +23,7 @@ function courseplay:loadHud(self)
   self.hudpage[1][1] = {}
     self.hudpage[1][2] = {}
     if self.show_hud then
+      self.hudInfoBaseOverlay:render();
 	  if self.showHudInfoBase <= 1 then
         if self.play then
 			if not self.drive then
@@ -30,9 +31,7 @@ function courseplay:loadHud(self)
 				
 	            self.hudpage[1][1][1]= courseplay:get_locale(self, "CoursePlayStart")
 	            							
-				if InputBinding.hasEvent(InputBinding.AHInput1) then
-					courseplay:start(self)
-				end
+				
 			else
 				local last_recordnumber = nil
 				
@@ -44,15 +43,11 @@ function courseplay:loadHud(self)
 			    
 				if self.Waypoints[last_recordnumber].wait and self.wait then
 	   				self.hudpage[1][1][2]= courseplay:get_locale(self, "CourseWaitpointStart")
-	   				if InputBinding.hasEvent(InputBinding.AHInput2) then
-						self.wait = false
-					end
+	   				
 				end
 
 				self.hudpage[1][1][1]= courseplay:get_locale(self, "CoursePlayStop")
-				if InputBinding.hasEvent(InputBinding.AHInput1) then
-					courseplay:stop(self)
-				end
+			
 
 				if not self.loaded then
 					self.hudpage[1][1][3]= courseplay:get_locale(self, "NoWaitforfill")				
@@ -91,23 +86,47 @@ function courseplay:loadHud(self)
 
 	
 	  elseif self.showHudInfoBase == 2 then
-		self.hudpage[2][1][2]= courseplay:get_locale(self, "CourseLoad")
-			
-		self.hudpage[2][1][3]= courseplay:get_locale(self, "CourseDel")
-   			
-		if not self.record and (table.getn(self.Waypoints) ~= 0) then
-			self.hudpage[2][1][1]= courseplay:get_locale(self, "CourseSave")
-			
-			
-			if InputBinding.hasEvent(InputBinding.AHInput1) then
-   				 courseplay:input_course_name(self)
-   		 	end
-   		end
+	    courseplay:load_courses(self)
+		local number_of_courses = 0
+		
+		for k,course in pairs(self.courses) do 
+		  number_of_courses = number_of_courses + 1
+		end
+		
+		local start_course_num = self.selected_course_number
+		local end_course_num = start_course_num + 4
+		
+		if end_course_num >= number_of_courses then
+		  end_course_num = number_of_courses-1
+		end
+		
+		for i = 0, 10, 1 do
+		  self.hudpage[2][1][i] = nil
+		end
+		
+		
+		local row =1
+		for i = start_course_num, end_course_num, 1 do
+		  for _,button in pairs(self.buttons) do
+		    if button.page == -2 and button.row == row then
+		      button.overlay:render()
+		    end
+		  end		  
+		  local course_name = self.courses[i+1].name
+		  
+		  if course_name == nil or course_name == "" then
+		    course_name = "-"
+		  end
+		  
+		  self.hudpage[2][1][row] = course_name
+		  row = row +1 
+		end
+		
 	  elseif self.showHudInfoBase == 3 then
-		self.hudpage[3][1][1]= "seitl. Abstand:"
-	    self.hudpage[3][1][2]= "Start bei%:"
-		self.hudpage[3][1][3]= "Wenderadius:"
-		self.hudpage[3][1][4]= "Pipe Abstand:"
+		self.hudpage[3][1][1]= courseplay:get_locale(self, "CPCombineOffset") --"seitl. Abstand:"
+	    self.hudpage[3][1][2]= courseplay:get_locale(self, "CPRequiredFillLevel") --"Start bei%:"
+		self.hudpage[3][1][3]= courseplay:get_locale(self, "CPTurnRadius") --"Wenderadius:"
+		self.hudpage[3][1][4]= courseplay:get_locale(self, "CPPipeOffset") --"Pipe Abstand:"
 		
 		if self.ai_state ~= nil then
 			self.hudpage[3][2][1]= string.format("%.1f", self.combine_offset)
@@ -134,14 +153,14 @@ function courseplay:loadHud(self)
 	  
 	  elseif self.showHudInfoBase == 4 then
 	    
-	    self.hudpage[4][1][1]= "Drescher wählen:"
-	    self.hudpage[4][1][2]= "Dreschersuche:"
-	    self.hudpage[4][1][3]= "Aktuell:"
+	    self.hudpage[4][1][1]= courseplay:get_locale(self, "CPSelectCombine") -- "Drescher wählen:"
+	    self.hudpage[4][1][2]= courseplay:get_locale(self, "CPCombineSearch") -- "Dreschersuche:"
+	    self.hudpage[4][1][3]= courseplay:get_locale(self, "CPActual") -- "Aktuell:"
 	  
 	    if self.active_combine ~= nil then
 	      self.hudpage[4][2][3] = self.active_combine.name
 	    else
-	      self.hudpage[4][2][3] = "keiner"
+	      self.hudpage[4][2][3] = courseplay:get_locale(self, "CPNone") -- "keiner"
 	    end
 	  
 	    if self.saved_combine ~= nil then
@@ -151,21 +170,21 @@ function courseplay:loadHud(self)
 	      end
 	      self.hudpage[4][2][1] = combine_name .. " (" .. string.format("%d", courseplay:distance_to_object(self, self.saved_combine)).."m)"
 	    else
-	      self.hudpage[4][2][1] = "keiner"
+	      self.hudpage[4][2][1] = courseplay:get_locale(self, "CPNone") -- "keiner"
 	    end
 	  
 	    if self.search_combine then
-	      self.hudpage[4][2][2]= "automatisch finden"
+	      self.hudpage[4][2][2]= courseplay:get_locale(self, "CPFindAuto") -- "automatisch finden"
 	    else
-	      self.hudpage[4][2][2]= "manuell zuweisen"
+	      self.hudpage[4][2][2]= courseplay:get_locale(self, "CPFindManual") -- "manuell zuweisen"
 	    end
 	    
 	    
 
 	  elseif self.showHudInfoBase == 5 then
-	    self.hudpage[5][1][1]= "Wendemanöver:"
-	    self.hudpage[5][1][2]= "Auf dem Feld:"
-	    self.hudpage[5][1][3]= "Auf Straße:"
+	    self.hudpage[5][1][1]= courseplay:get_locale(self, "CPTurnSpeed") -- "Wendemanöver:"
+	    self.hudpage[5][1][2]= courseplay:get_locale(self, "CPFieldSpeed") -- "Auf dem Feld:"
+	    self.hudpage[5][1][3]= courseplay:get_locale(self, "CPMaxSpeed") -- "Auf Straße:"
 	    
 	    self.hudpage[5][2][1]= string.format("%d", self.turn_speed*3600) .. " km/h"
 	    self.hudpage[5][2][2]= string.format("%d", self.field_speed*3600) .. " km/h"
@@ -179,7 +198,7 @@ function courseplay:showHud(self)
   -- HUD
 	if self.show_hud and self.isEntered then
 	    
-		self.hudInfoBaseOverlay:render();
+		
 		courseplay:render_buttons(self, self.showHudInfoBase)
 		
     	if self.ai_mode == 1 then
@@ -197,15 +216,15 @@ function courseplay:showHud(self)
 		end
 
     	if self.current_course_name ~= nil then
-			self.hudinfo[2]= "Kurs: "..self.current_course_name
+			self.hudinfo[2]= courseplay:get_locale(self, "CPCourse").. " " .. self.current_course_name
 		else
-			self.hudinfo[2]=  "Kurs: kein Kurs geladen"
+			self.hudinfo[2]=  courseplay:get_locale(self, "CPNoCourseLoaded") -- "Kurs: kein Kurs geladen"
 		end
 		
 		if self.Waypoints[self.recordnumber ] ~= nil then
-		    self.hudinfo[3]= "Wegpunkt: "..self.recordnumber .." / "..self.maxnumber
+		    self.hudinfo[3]= courseplay:get_locale(self, "CPWaypoint") ..self.recordnumber .." / "..self.maxnumber
 		else
-			self.hudinfo[3]=  "Keine Wegpunkte geladen"
+			self.hudinfo[3]=  courseplay:get_locale(self, "CPNoWaypoint") -- "Keine Wegpunkte geladen"
 		end
 		setTextBold(false)
 		local i = 0
@@ -220,15 +239,15 @@ function courseplay:showHud(self)
 		local hud_headline = nil
 		
 		if self.showHudInfoBase == 1 then
-		  hud_headline= "Abfahrhelfer Steuerung"
+		  hud_headline= courseplay:get_locale(self, "CPSteering") -- "Abfahrhelfer Steuerung"
 		elseif self.showHudInfoBase == 2 then
-	      hud_headline= "Kurse verwalten"
+	      hud_headline= courseplay:get_locale(self, "CPManageCourses") -- "Kurse verwalten"
 	    elseif self.showHudInfoBase == 3 then
-	      hud_headline= "Einstellungen Combi Modus"
+	      hud_headline= courseplay:get_locale(self, "CPCombiSettings") -- "Einstellungen Combi Modus"
 		elseif self.showHudInfoBase == 4 then
-		  hud_headline= "Drescher verwalten";
+		  hud_headline= courseplay:get_locale(self, "CPManageCombines") -- "Drescher verwalten";
 		elseif self.showHudInfoBase == 5 then
-		  hud_headline= "Geschwindigkeiten"
+		  hud_headline= courseplay:get_locale(self, "CPSpeedLimit") -- "Geschwindigkeiten"
 		end
 		
 	    renderText(self.hudInfoBasePosX + 0.060, self.hudInfoBasePosY + 0.240, 0.021, hud_headline);

@@ -118,3 +118,24 @@ function courseplay:switch_combine(self, change_by)
   end
   
 end
+
+
+function courseplay:change_selected_course(self, change_by)
+	local selected_course_number = self.selected_course_number
+	selected_course_number = selected_course_number + change_by
+	
+	local number_of_courses = 0
+	for k,trigger in pairs(self.courses) do 
+	  number_of_courses = number_of_courses + 1
+	end
+	
+	if selected_course_number >= number_of_courses-4 then
+	  selected_course_number = number_of_courses-5
+	end
+	
+	if selected_course_number < 0 then
+	  selected_course_number = 0
+	end
+	
+	self.selected_course_number = selected_course_number
+end

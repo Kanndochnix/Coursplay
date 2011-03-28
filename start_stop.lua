@@ -1,6 +1,10 @@
 -- starts driving the course
 function courseplay:start(self)    
 	
+	if table.getn(self.Waypoints) < 1 then
+	  return
+	end
+	
 	self.numCollidingVehicles = 0;
 	self.numToolsCollidingVehicles = {};
 	self.drive  = false
@@ -70,6 +74,9 @@ function courseplay:stop(self)
 	self.motor.maxRpm[2] = self.orgRpm[2] 
 	self.motor.maxRpm[3] = self.orgRpm[3] 
 	self.record = false
+	if self.ai_state > 4 then
+	  self.ai_state = 1
+	end
 	
 	-- removing collision trigger
 	if self.aiTrafficCollisionTrigger ~= nil then

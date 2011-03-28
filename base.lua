@@ -11,45 +11,36 @@ function courseplay:load(xmlFile)
 	if not steerable_overwritten then	  
 	  steerable_overwritten = true
 	  if Steerable.load ~= nil then
-			local orgSteerableLoad = Steerable.load
-			print("overwriting steerable.load")
-			Steerable.load = function(self,xmlFile)
-				orgSteerableLoad(self,xmlFile)
+		local orgSteerableLoad = Steerable.load
+		print("overwriting steerable.load")
+		Steerable.load = function(self,xmlFile)
+		orgSteerableLoad(self,xmlFile)
 
-				for nIndex,sXMLPath in pairs(aNameSearch) do 
-					self.name = getXMLString(xmlFile, sXMLPath);
-					if self.name ~= nil then 
-						break; 
-					end;
-				end;
-				if self.name == nil then 
-					self.name = g_i18n:getText("UNKNOWN") 
-				end;
-			end;
+		for nIndex,sXMLPath in pairs(aNameSearch) do 
+		  self.name = getXMLString(xmlFile, sXMLPath);
+		  if self.name ~= nil then break; end;
 		end;
+		if self.name == nil then self.name = g_i18n:getText("UNKNOWN") end;
+		end;
+	  end;
 
-		if Attachable.load ~= nil then
-			print("overwriting Attachable.load")
-			local orgAttachableLoad = Attachable.load
+	  if Attachable.load ~= nil then
+		print("overwriting Attachable.load")
+		 local orgAttachableLoad = Attachable.load
 
-			Attachable.load = function(self,xmlFile)
-				orgAttachableLoad(self,xmlFile)
+		 Attachable.load = function(self,xmlFile)
+		 orgAttachableLoad(self,xmlFile)
 
-				for nIndex,sXMLPath in pairs(aNameSearch) do 
-					self.name = getXMLString(xmlFile, sXMLPath);
-					if self.name ~= nil then
-						break;
-					end;
-				end;
-				if self.name == nil then 
-					self.name = g_i18n:getText("UNKNOWN") 
-				end;
-				
+		 for nIndex,sXMLPath in pairs(aNameSearch) do 
+		   self.name = getXMLString(xmlFile, sXMLPath);
+		   if self.name ~= nil then break; end;
+		 end;
+		if self.name == nil then self.name = g_i18n:getText("UNKNOWN") end;
+			-- C.Schoch	
 				self.tipper_offset = getXMLFloat(xmlFile, "vehicle.tipperOffset"); 
-				
-			end
-			
-		end;
+			-- C.Schoch	
+		end
+	  end;
 	
 	end
 	
@@ -61,6 +52,49 @@ function courseplay:load(xmlFile)
 	  if self.name == nil then self.name = g_i18n:getText("UNKNOWN") end;
 	end
 	
+	-- dirty workaround for localization - don't try this at home!
+	
+	self.locales.CPFollowTractor= g_i18n:getText("CPFollowTractor")
+	self.locales.CPWaitForWaypoint= g_i18n:getText("CPWaitForWaypoint")
+	self.locales.CPWaitUntilCombineTurned= g_i18n:getText("CPWaitUntilCombineTurned")
+	self.locales.CPDriveToWP= g_i18n:getText("CPDriveToWP")
+	self.locales.CPTurningTo= g_i18n:getText("CPTurningTo")
+	self.locales.CPCombineWantsMeToStop= g_i18n:getText("CPCombineWantsMeToStop")
+	self.locales.CPDriveToCombine= g_i18n:getText("CPDriveToCombine")
+	self.locales.CPDriveNextCombine= g_i18n:getText("CPDriveNextCombine")
+	self.locales.CPDriveBehinCombine= g_i18n:getText("CPDriveBehinCombine")
+	self.locales.CPCombineTurning= g_i18n:getText("CPCombineTurning")
+	self.locales.CPloading= g_i18n:getText("CPloading")
+	self.locales.CPTriggerReached= g_i18n:getText("CPTriggerReached")
+	self.locales.CPSteering= g_i18n:getText("CPSteering")
+	self.locales.CPManageCourses= g_i18n:getText("CPManageCourses")
+	self.locales.CPCombiSettings= g_i18n:getText("CPCombiSettings")
+	self.locales.CPManageCombines= g_i18n:getText("CPManageCombines")
+	self.locales.CPSpeedLimit= g_i18n:getText("CPSpeedLimit")	
+	self.locales.CPTurnSpeed = g_i18n:getText("CPTurnSpeed")
+	self.locales.CPCourse = g_i18n:getText("CPCourse")
+	self.locales.CPNoCourseLoaded = g_i18n:getText("CPNoCourseLoaded")
+	self.locales.CPWaypoint = g_i18n:getText("CPWaypoint")
+	self.locales.CPNoWaypoint = g_i18n:getText("CPNoWaypoint")
+	self.locales.CPFieldSpeed = g_i18n:getText("CPFieldSpeed")
+	self.locales.CPMaxSpeed = g_i18n:getText("CPMaxSpeed")	
+	self.locales.CPFindAuto = g_i18n:getText("CPFindAuto")
+	self.locales.CPFindManual = g_i18n:getText("CPFindManual")
+	self.locales.CPActual = g_i18n:getText("CPActual")
+	self.locales.CPSelectCombine = g_i18n:getText("CPSelectCombine")
+	self.locales.CPCombineSearch = g_i18n:getText("CPCombineSearch")
+	self.locales.CPNone = g_i18n:getText("CPNone")
+	self.locales.CPPipeOffset = g_i18n:getText("CPPipeOffset")
+	self.locales.CPTurnRadius = g_i18n:getText("CPTurnRadius")
+	self.locales.CPRequiredFillLevel = g_i18n:getText("CPRequiredFillLevel")
+	self.locales.CPCombineOffset = g_i18n:getText("CPCombineOffset")
+	self.locales.CPUnloading = g_i18n:getText("CPUnloading")
+	self.locales.CPInTraffic = g_i18n:getText("CPInTraffic")
+	self.locales.CPReachedOverloadPoint = g_i18n:getText("CPReachedOverloadPoint")
+	self.locales.CPReachedWaitPoint = g_i18n:getText("CPReachedWaitPoint")
+	self.locales.CPCourseName = g_i18n:getText("CPLoadCourse")
+	self.locales.CPCourseName = g_i18n:getText("CPCourseName")
+	self.locales.CPDistance = g_i18n:getText("CPDistance")
 	self.locales.HudControl = g_i18n:getText("HudControl")
 	self.locales.CourseReset = g_i18n:getText("CourseReset")
 	self.locales.CoursePlayStart = g_i18n:getText("CoursePlayStart")
@@ -109,8 +143,6 @@ function courseplay:load(xmlFile)
 	-- global info text - also displayed when not in vehicle
 	self.global_info_text = nil
 	
-	-- course modes: 1 circle route - 2 returning route
-	self.course_mode = 1
 	
 	-- ai mode: 1 abfahrer, 2 kombiniert
 	self.ai_mode = 1
@@ -194,8 +226,6 @@ self.pFactor = 3000;
 	self.save_name = false
 	
 	
-	self.course_selection_active = false
-	self.select_course = false
 	self.selected_course_number = 0
 	self.course_Del = false	
 	
@@ -215,6 +245,7 @@ self.pFactor = 3000;
 	
 	-- loading saved courses from xml
 	courseplay:load_courses(self)
+	
 	
 	self.mouse_enabled = false	
 
@@ -257,6 +288,8 @@ self.pFactor = 3000;
     
     courseplay:register_button(self, nil, "delete.png", "close_hud", 1, self.hudInfoBasePosX + 0.300, self.hudInfoBasePosY + 0.255, 0.016, 0.016)
     
+    courseplay:register_button(self, nil, "disk_blue.png", "save_course", 1, self.hudInfoBasePosX + 0.280, self.hudInfoBasePosY + 0.050, 0.016, 0.016)
+    
     courseplay:register_button(self, 1, "blank.png", "row1", nil, self.hudInfoBasePosX-0.05, self.hudInfoBasePosY + 0.207, 0.32, 0.015)
     courseplay:register_button(self, 1, "blank.png", "row2", nil, self.hudInfoBasePosX-0.05, self.hudInfoBasePosY + 0.185, 0.32, 0.015)
     courseplay:register_button(self, 1, "blank.png", "row3", nil, self.hudInfoBasePosX-0.05, self.hudInfoBasePosY + 0.164, 0.32, 0.015)
@@ -265,8 +298,14 @@ self.pFactor = 3000;
     courseplay:register_button(self, 2, "blank.png", "row2", nil, self.hudInfoBasePosX-0.05, self.hudInfoBasePosY + 0.185, 0.32, 0.015)
     courseplay:register_button(self, 2, "blank.png", "row3", nil, self.hudInfoBasePosX-0.05, self.hudInfoBasePosY + 0.164, 0.32, 0.015)
     
-    courseplay:register_button(self, 2, "navigate_up.png",   "change_selected_course", -1, self.hudInfoBasePosX + 0.285, self.hudInfoBasePosY +0.188, 0.010, 0.010)
-    courseplay:register_button(self, 2, "navigate_down.png", "change_selected_course", 1, self.hudInfoBasePosX + 0.300, self.hudInfoBasePosY +0.188, 0.010, 0.010)
+    courseplay:register_button(self, 2, "navigate_up.png",   "change_selected_course", -1, self.hudInfoBasePosX + 0.285, self.hudInfoBasePosY +0.222, 0.020, 0.020)
+    courseplay:register_button(self, 2, "navigate_down.png", "change_selected_course", 1, self.hudInfoBasePosX + 0.285, self.hudInfoBasePosY +0.120, 0.020, 0.020)
+    
+    for i = 1, 5, 1 do    
+      local posy = self.hudInfoBasePosY + 0.205 - (i-1) * 0.021
+      courseplay:register_button(self, -2, "folder.png",   "load_course", i, self.hudInfoBasePosX + 0.235, posy, 0.014, 0.014, i)
+      courseplay:register_button(self, -2, "delete.png",   "clear_course", i, self.hudInfoBasePosX + 0.258, posy, 0.014, 0.014, i)
+    end
     
     courseplay:register_button(self, 3, "navigate_minus.png", "change_combine_offset", -0.1, self.hudInfoBasePosX + 0.285, self.hudInfoBasePosY + 0.210, 0.010, 0.010)
     courseplay:register_button(self, 3, "navigate_plus.png", "change_combine_offset", 0.1, self.hudInfoBasePosX + 0.300, self.hudInfoBasePosY +0.210, 0.010, 0.010)
@@ -315,10 +354,6 @@ function courseplay:draw()
 		
 	if self.dcheck and table.getn(self.Waypoints) > 1 then
 	  courseplay:dcheck(self);
-	end
-
-	if self.course_selection_active then
-	  courseplay:display_course_selection(self);
 	end
 	
 	if self.mouse_enabled then 

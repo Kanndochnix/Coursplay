@@ -73,10 +73,7 @@ function courseplay:start_record(self)
 	
 	self.record = true
 	self.drive  = false
-	-- show arrow to start if in circle mode
-	if self.course_mode == 1 then
-		self.dcheck = true
-	end
+
 	self.recordnumber = 1
 	self.tmr = 101
 end		
@@ -95,11 +92,18 @@ end
 -- resets actual course -- just setting variables
 function courseplay:reset_course(self)	
 	self.recordnumber = 1
+	self.target_x, self.target_y, self.target_z = nil, nil, nil
+	if self.active_combine ~= nil then
+	  courseplay:unregister_at_combine(self, self.active_combine)
+	end
+	self.next_targets = {}
+	self.current_course_name = nil
+	self.ai_mode = 1
+	self.ai_state = 1
 	self.tmr = 1
 	self.Waypoints = {}
 	courseplay:sign_visibility(self, false)
 	self.signs = {}
 	self.play = false
 	self.back = false
-	self.course_mode = 1
 end	
