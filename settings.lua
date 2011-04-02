@@ -121,6 +121,7 @@ end
 
 
 function courseplay:change_selected_course(self, change_by)
+    courseplay:load_courses(self)
 	local selected_course_number = self.selected_course_number
 	selected_course_number = selected_course_number + change_by
 	
@@ -138,4 +139,15 @@ function courseplay:change_selected_course(self, change_by)
 	end
 	
 	self.selected_course_number = selected_course_number
+end
+
+function courseplay:change_num_ai_helpers(self, change_by)
+	local num_helpers = g_currentMission.maxNumHirables
+	num_helpers = num_helpers + change_by	
+	
+	if num_helpers < 1 then
+	  num_helpers = 1
+	end
+	
+	g_currentMission.maxNumHirables = num_helpers
 end

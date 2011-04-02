@@ -42,6 +42,11 @@ function courseplay:handle_mode2(self, dt)
   
   local current_tipper = self.tippers[self.currentTrailerToFill] 
   
+  if current_tipper == nil then
+  	self.tools_dirty = true
+    return false
+  end
+  
   if (current_tipper.fillLevel == current_tipper.capacity) or self.loaded then
     if table.getn(self.tippers) > self.currentTrailerToFill then			
       self.currentTrailerToFill = self.currentTrailerToFill + 1
@@ -357,30 +362,7 @@ function courseplay:unload_combine(self, dt)
       local combine_speed = combine.lastSpeed
       
       --print(string.format("lz: %f combine.turnStage %d ", lz, combine.turnStage ))
-			
-			-- C.Schoch
-			if self.oldCombineTurnStage ~= nil then
-				if combine.turnStage == 1 and combine.turnStage ~= self.oldCombineTurnStage then
-					print('MyFruit');
-					local last_offset = self.chopper_offset;				
-	  	  	self.chopper_offset = self.combine_offset  	  	
-	  	    local leftFruit, rightFruit =  courseplay:side_to_drive(self, combine, -20)
-	  	    if leftFruit > rightFruit then
-						self.chopper_offset = self.combine_offset * -1
-					elseif leftFruit == rightFruit then
-  	        self.chopper_offset = last_offset * -1						
-	  	    end
-					if self.chopper_offset < 0 then 
-							print('Fahre rechts')
-					else
-						print('Fahre links')
-					end
-				end;
-			end;
-      self.oldCombineTurnStage = combine.turnStage; 
-			--C.Schoch
-			
-			
+       
       if combine_speed ~= nil then
         refSpeed = combine_speed + (combine_speed * lz * 3 / 10)
         if refSpeed > self.field_speed then
@@ -435,11 +417,9 @@ function courseplay:unload_combine(self, dt)
 	      self.next_ai_state = 2
 	    else
 	      -- corn chopper	    
+	      self.leftFruit, self.rightFruit =  courseplay:side_to_drive(self, combine, -20)
 	      -- set waypoint self.turn_radius meters diagonal vorne links ;)
-			-- C.Schoch
-	    -- if self.chopper_offset > 0 then			
-			if self.chopper_offset < 0 then
-			-- C.Schoch			
+	      if self.chopper_offset > 0 then
 	        self.target_x, self.target_y, self.target_z = localToWorld(self.rootNode, self.turn_radius, 0, self.turn_radius)
 	        self.turn_factor = -5
 	      else
@@ -527,16 +507,18 @@ function courseplay:unload_combine(self, dt)
 	  	    table.remove(self.next_targets, 1)
 	  	  else
 		  	  if self.next_ai_state == 9 and combine_turning == nil then  	    
-					-- C.Schoch
-					-- local last_offset = self.chopper_offset;				
-	  	  	-- self.chopper_offset = self.combine_offset  	  	
-	  	    -- local leftFruit, rightFruit =  courseplay:side_to_drive(self, combine)
-	  	    -- if leftFruit > rightFruit then
-						-- self.chopper_offset = self.combine_offset * -1
-					-- elseif leftFruit == rightFruit then
-  	        -- self.chopper_offset = last_offset * -1
-	  	    -- end
-					-- C.Schoch
+		  	  	self.chopper_offset = self.combine_offset  	  	
+		  	  	
+		  	  	-- only for corn choppers
+		  	  	if combine.grainTankCapacity == 0 then 
+		  	  	  local last_offset = self.chopper_offset	  	    
+		  	      if self.leftFruit > self.rightFruit then
+		  	        self.chopper_offset = self.combine_offset * -1
+		  	      elseif self.leftFruit == self.rightFruit then      
+		  	        self.chopper_offset = last_offset * -1
+		  	      end
+		  	    end
+		  	    
 		  	    self.target_x, self.target_y, self.target_z = localToWorld(combine.rootNode, self.chopper_offset*0.5, 0, -10)
 		  	    mode = 9  	    
 		  	    self.next_ai_state = 4
