@@ -1,7 +1,7 @@
 
 -- drives recored course
 function courseplay:drive(self, dt)
-  
+	  
   -- unregister at combine, if there is one
   if self.loaded == true and courseplay_position ~= nil then
     courseplay:unregister_at_combine(self, self.active_combine)
@@ -25,11 +25,46 @@ function courseplay:drive(self, dt)
     -- this should never happen
     self.recordnumber = self.maxnumber
   end
-  cx ,cz = self.Waypoints[self.recordnumber].cx, self.Waypoints[self.recordnumber].cz
-  -- distance to waypoint
+  
+  local last_recordnumber = nil
+  
+   if self.recordnumber > 1 then
+     last_recordnumber = self.recordnumber - 1    
+    else
+     last_recordnumber = 1
+   end
+  
+  local next3_recordnumber = nil
+   
+   if self.recordnumber < self.maxnumber-3 then
+     next3_recordnumber = self.recordnumber +3
+   else
+   	 next3_recordnumber = self.recordnumber
+   end
+  local angle = nil
+  cx ,cz, angle = self.Waypoints[self.recordnumber].cx, self.Waypoints[self.recordnumber].cz, self.Waypoints[self.recordnumber].angle
+  --local last_cx, last_cz = nil
+  --last_cx ,last_cz = self.Waypoints[next3_recordnumber].cx, self.Waypoints[next3_recordnumber].cz
+  
+  -- offset - endlich lohnt sich der mathe-lk von vor 1000 Jahren ;)
+  --if self.WpOffsetZ ~= nil and self.WpOffsetZ ~= 0 then
+  	--courseplay:addsign(self, cx, 10, cz)  	
+  	--print(string.format("old WP: %d x %d ", cx, cz ))
+  	
+  	--if angle < 0 then
+  	--  angle = 360 - angle * -1
+  	--end
+  	
+    --cx  = math.sin(angle+90) * self.WpOffsetZ + cx
+    --cz  = math.cos(angle+90) * self.WpOffsetZ + cz
+    
+    --print(string.format("new WP: %d x %d (angle) %d ", cx, cz, angle ))
+    --courseplay:addsign2(self, cx, 20, cz)
+  --end
+
   
   self.dist = courseplay:distance(cx ,cz ,ctx ,ctz)
- 
+  --print(string.format("Tx: %f2 Tz: %f2 WPcx: %f2 WPcz: %f2 dist: %f2 ", ctx, ctz, cx, cz, self.dist ))
   -- what about our tippers?
   local tipper_fill_level, tipper_capacity = self:getAttachedTrailersFillLevelAndCapacity()
   local fill_level = nil
@@ -48,49 +83,141 @@ function courseplay:drive(self, dt)
   local nx, ny, nz = localDirectionToWorld(self.aiTractorDirectionNode, 0, 0, 1)
   -- the tipper that is currently loaded/unloaded
   local active_tipper = nil
+
+
+ 
   
-  local last_recordnumber = nil
+	if self.Waypoints[last_recordnumber].wait and self.wait then
+		if self.ai_mode == 3 then
+		   	self.global_info_text = courseplay:get_locale(self, "CPReachedOverloadPoint") --'hat Überladepunkt erreicht.'
+		   	if self.tipper_attached then
+		   	
+		   	  -- drive on if fill_level doesn't change and fill level is < 100-self.required_fill_level_for_follow
+		   	  local drive_on = false		   	  
+		   	  if self.timeout < self.timer or self.last_fill_level == nil then
+		   	    if self.last_fill_level ~= nil and fill_level == self.last_fill_level and fill_level < 100-self.required_fill_level_for_follow then
+		   	      drive_on = true
+		   	    end
+		   	    self.last_fill_level = fill_level
+		   	    courseplay:set_timeout(self, 400)
+		   	  end
+		   	
+		   	  if fill_level == 0 or drive_on then
+		   		self.wait = false
+		   		self.last_fill_level = nil
+		   		self.unloaded = true
+		   	  end
+			end
+		elseif self.ai_mode == 4 then
+			if last_recordnumber == self.startWork and fill_level ~= 0 then
+				self.wait = false
+			end
+			if last_recordnumber == self.stopWork and self.abortWork ~= nil then
+		    	self.wait = false
+			end
+			if last_recordnumber == self.stopWork and self.abortWork == nil then
+		    	self.global_info_text = courseplay:get_locale(self, "CPWorkEnd") --'hat Arbeit beendet.'
+			end
+		elseif self.ai_mode == 6 then
+			if last_recordnumber == self.startWork and fill_level ~= 100 then
+				self.wait = false
+			end
+			if last_recordnumber == self.stopWork and self.abortWork ~= nil then
+		    	self.wait = false
+			end
+			if last_recordnumber == self.stopWork and self.abortWork == nil then
+		    	self.global_info_text = courseplay:get_locale(self, "CPWorkEnd") --'hat Arbeit beendet.'
+			end
+  		else
+		   	self.global_info_text = courseplay:get_locale(self, "CPReachedWaitPoint") --'hat Wartepunkt erreicht.'
+		end
+		
+		
+     	allowedToDrive = false
+	else
+		-- abfahrer-mode
+		if (self.ai_mode == 1 and self.tipper_attached and tipper_fill_level ~= nil) or (self.loaded and self.ai_mode == 2) then
+		-- is there a tipTrigger within 10 meters?
+			raycastAll(tx, ty, tz, nx, ny, nz, "findTipTriggerCallback", 10, self)
+		-- handle mode
+			allowedToDrive, active_tipper = courseplay:handle_mode1(self)
+		end
+		
+		-- combi-mode
+		if (((self.ai_mode == 2 or self.ai_mode == 3) and self.recordnumber < 2) or self.active_combine) and self.tipper_attached then	      
+		  return courseplay:handle_mode2(self, dt)
+		end
+		
+		-- Fertilice loading --only for one Implement !
+		if self.ai_mode == 4 and self.tipper_attached and self.startWork ~= nil and self.stopWork ~= nil then
+			if self.recordnumber == 2 and fill_level < 100 and not self.loaded then   --or self.loaded
+				allowedToDrive = false
+		    	self.info_text = string.format(courseplay:get_locale(self, "CPloading") ,tipper_fill_level,tipper_capacity )
+		    	
+				if self.tippers ~= nil then
+				  local tools= table.getn(self.tippers)
+				  for i=1, tools do
+				    local activeTool = self.tippers[i]
+				    if activeTool.sprayerFillActivatable:getIsActivatable() == true then  -- only work with self on tractor to do
+				       if activeTool.isSprayerFilling == false and fill_level < 100 then
+				         activeTool.sprayerFillActivatable:onActivateObject()
+				       end
+				    end
+				  end
+				end
+   			else
+				allowedToDrive = true		 		    
+			end
+        elseif  self.ai_mode == 4 and (self.startWork == nil or self.stopWork == nil) then
+			allowedToDrive = false
+			self.info_text = self.locales.CPNoWorkArea
+ 		end
+ 		
+ 		if self.ai_mode ~= 5 and self.ai_mode ~= 6 and not self.tipper_attached then
+ 		    self.info_text = self.locales.CPWrongTrailer
+ 		    allowedToDrive = false
+		end
+		
+ 		
+ 		if self.fuelFillLevel < 50 then
+ 			self.global_info_text = self.locales.CPFuelWarning
+		elseif self.fuelFillLevel < 25 then
+		    allowedToDrive = false
+		    self.global_info_text = self.locales.CPNoFuelStop
+ 		end
+ 		
+ 		if self.showWaterWarning then
+		    allowedToDrive = false
+		    self.global_info_text = self.locales.CPWaterDrive
+ 		end
+  	end
   
-  if self.recordnumber > 1 then
-    last_recordnumber = self.recordnumber - 1    
-  else
-    last_recordnumber = 1
-  end
-  
-   if self.Waypoints[last_recordnumber].wait and self.wait then
-     if self.ai_mode == 3 then
-       self.global_info_text = courseplay:get_locale(self, "CPReachedOverloadPoint") --'hat Überladepunkt erreicht.'
-     else
-       self.global_info_text = courseplay:get_locale(self, "CPReachedWaitPoint") --'hat Wartepunkt erreicht.'
-     end
-     
-     if self.ai_mode == 3 and self.tipper_attached and fill_level == 0 then
-       self.wait = false
-       self.unloaded = true
-     end
-     
-     allowedToDrive = false
-    else
-	  -- abfahrer-mode
-	  if (self.ai_mode == 1 and self.tipper_attached and tipper_fill_level ~= nil) or (self.loaded and self.ai_mode == 2) then  
+   -- ai_mode 4 = fertilize
+	local workArea = false
+	local workSpeed = false
+
+	if self.ai_mode == 4 and self.tipper_attached and self.startWork ~= nil and self.stopWork ~= nil   then
+		allowedToDrive, workArea, workSpeed = courseplay:handle_mode4(self,allowedToDrive, workArea, workSpeed, fill_level, last_recordnumber)
+	end
+	
+	-- Mode 6 Fieldwork for balers and foragewagon
+	if self.ai_mode == 6 and self.startWork ~= nil and self.stopWork ~= nil then
 		-- is there a tipTrigger within 10 meters?
 		raycastAll(tx, ty, tz, nx, ny, nz, "findTipTriggerCallback", 10, self)
-		-- handle mode
-		allowedToDrive, active_tipper = courseplay:handle_mode1(self)
-	  end
-	  
-	  -- combi-mode
-	  if (((self.ai_mode == 2 or self.ai_mode == 3) and self.recordnumber < 2) or self.active_combine) and self.tipper_attached then	      
-		  return courseplay:handle_mode2(self, dt)
-	  end
-  end
+		allowedToDrive, workArea, workSpeed, active_tipper = courseplay:handle_mode6(self, allowedToDrive, workArea, workSpeed, fill_level, last_recordnumber)
+	end
+  
   
   allowedToDrive = courseplay:check_traffic(self, true, allowedToDrive)
    
   -- stop or hold position
   if not allowedToDrive then  
-     self.motor:setSpeedLevel(0, false);     
-     AIVehicleUtil.driveInDirection(self, dt, 30, 0, 0, 28, false, moveForwards, 0, 1)	
+     
+     self.motor:setSpeedLevel(0, false);
+     
+     if g_server ~= nil then
+       AIVehicleUtil.driveInDirection(self, dt, self.steering_angle, 0.5, 0.5, 28, false, moveForwards, 0, 1)
+     end
 	 
      -- unload active tipper if given
      if active_tipper then
@@ -104,93 +231,131 @@ function courseplay:drive(self, dt)
      return;
    end
   
-  -- more than 5 meters away from next waypoint?
-  if self.dist > 5 then
-  
-  	  --print(string.format("distance to WP: %f", self.dist ))
-	  -- speed limit at the end an the beginning of course
-	  if self.recordnumber > self.maxnumber - 4 or self.recordnumber < 4 then
-		  self.sl = 2
-	  else
-		  self.sl = 3					
-	  end		
-	  
-	  if self.dist > 30 then
-	    self.sl = 3	
-	  end
-	    
-	  -- is there an individual speed limit? e.g. for triggers
-	  if self.max_speed_level ~= nil then	    
-	    self.sl = self.max_speed_level
-	  end	  
-	  
+ 
+	
 	  -- which speed?
-	  local ref_speed = nil
-	  local real_speed = self.lastSpeedReal
-	  
-	  -- slow down before waitpoint	  
-	  if self.recordnumber < self.maxnumber-3 and (self.Waypoints[self.recordnumber+1].wait or self.Waypoints[self.recordnumber+2].wait or self.Waypoints[self.recordnumber].wait) then
-	    self.sl = 1
-	  end
-	  
-	  if self.sl == 1 then
-	    ref_speed = self.turn_speed
-	  end
-	  
-	  if self.sl == 2 then
-	  	ref_speed = self.field_speed
-	  end
-	  
-	  if self.sl == 3 then
-	  	ref_speed = self.max_speed
-	  end	  
-	  
+	local ref_speed = nil
+	local slowStartEnd =  self.recordnumber > self.maxnumber - 3 or self.recordnumber < 3
+	local slowDownWP   = false
+	local slowDownRev = false
+	local real_speed = self.lastSpeedReal
+    local maxRpm = self.motor.maxRpm[self.sl]
+	 
+	if self.recordnumber < (self.maxnumber - 3) then
+ 		slowDownWP = (self.Waypoints[self.recordnumber+2].wait or self.Waypoints[self.recordnumber+1].wait or self.Waypoints[self.recordnumber].wait)
+		slowDownRev = (self.Waypoints[self.recordnumber+2].rev or self.Waypoints[self.recordnumber+1].rev or self.Waypoints[self.recordnumber].rev)
+	else
+		slowDownWP = self.Waypoints[self.recordnumber].wait
+		slowDownRev = self.Waypoints[self.recordnumber].rev
+	end
+
+	if slowDownWP or self.ai_mode ~= 6 and slowDownRev or self.max_speed_level == 1 then
+		self.sl = 1
+    	ref_speed = self.turn_speed
+	elseif slowStartEnd or workSpeed then
+	    self.sl = 2
+	    ref_speed = self.field_speed
+	else
+		self.sl = 3
+		ref_speed = self.max_speed
+	end
+
+	--C.Schoch
+	--if (self.sl == 3 and not self.beaconLightsActive) or (self.sl ~=3 and self.beaconLightsActive) then
+	--  	self:setBeaconLightsVisibility(not self.beaconLightsActive);	  
+	--end
+	
+	-- Speed Control
+	maxRpm = self.motor.maxRpm[self.sl]
+	 
+	if real_speed < ref_speed then
+		maxRpm = maxRpm + 10
+	elseif real_speed > ref_speed then
+		maxRpm = maxRpm - 10
+	end
 	  	  
-	  local maxRpm = self.motor.maxRpm[self.sl]
-	  
-	  if real_speed < ref_speed then
-	  	maxRpm = maxRpm + 10
-	  elseif real_speed > ref_speed then
-	  	maxRpm = maxRpm - 10
-	  end
-	  	  
-	  -- don't drive faster/slower than you can!
-	  if maxRpm > self.orgRpm[3] then
-		  maxRpm = self.orgRpm[3]
-	  else
-	  	if maxRpm < self.motor.minRpm then
-	  		maxRpm = self.motor.minRpm
-	  	end
-	  end
-	  
-	  self.motor.maxRpm[self.sl] = maxRpm
+	-- don't drive faster/slower than you can!
+	if maxRpm > self.orgRpm[3] then
+  		maxRpm = self.orgRpm[3]
+	elseif maxRpm < self.motor.minRpm then
+		maxRpm = self.motor.minRpm
+	end
+	
+	self.motor.maxRpm[self.sl] = maxRpm
 
 	  -- where to drive?
-	  local lx, lz = AIVehicleUtil.getDriveDirection(self.rootNode,cx,cty,cz);
-	  
-	  -- go, go, go!
-	  AIVehicleUtil.driveInDirection(self, dt,  45, 1, 0.7, 20, true, true, lx, lz , self.sl, 0.9);
-	  
-	  courseplay:set_traffc_collision(self, lx, lz)
-	  
-  else	     
-	  if self.recordnumber < self.maxnumber  then
+	local fwd = nil
+	local distToChange = nil
+	local lx, lz = AIVehicleUtil.getDriveDirection(self.rootNode,cx,cty,cz);
+
+	if self.Waypoints[self.recordnumber].rev then
+		lz = lz * -1
+		lx = lx * -1
+		fwd = false
+	else
+		fwd = true
+	end
+	
+	-- go, go, go!
+	if self.recordnumber + 1 <= self.maxnumber then
+	local beforeReverse = (self.Waypoints[self.recordnumber+1].rev and not self.Waypoints[last_recordnumber].rev)
+	local afterReverse =  (not self.Waypoints[self.recordnumber+1].rev and self.Waypoints[last_recordnumber].rev)
+		if self.Waypoints[self.recordnumber].wait or self.recordnumber == 1 or beforeReverse or afterReverse then
+			distToChange = 1
+		elseif self.Waypoints[self.recordnumber].rev then
+		    distToChange = 3
+		else	
+			distToChange = 5
+		end
+    else
+		distToChange = 5
+	end
+	
+	
+	
+	-- record shortest distance to the next waypoint
+	if self.shortest_dist == nil or self.shortest_dist > self.dist then
+	  self.shortest_dist = self.dist
+	end
+	
+	if beforeReverse then
+		self.shortest_dist = nil
+	end
+	
+	-- if distance grows i must be circling	
+	if self.dist > self.shortest_dist and self.recordnumber > 3 and self.dist < 15 and self.Waypoints[self.recordnumber].rev ~= true  then
+	  distToChange = self.dist + 1
+	end
+	
+	if self.dist > distToChange then
+	  if g_server ~= nil then
+	    AIVehicleUtil.driveInDirection(self, dt, self.steering_angle, 0.5, 0.5, 8, true, fwd, lx, lz, self.sl, 0.5);
+	    courseplay:set_traffc_collision(self, lx, lz)
+	  end
+  	else	     
+  		-- reset distance to waypoint
+  		self.shortest_dist = nil
+		if self.recordnumber < self.maxnumber  then
 		  if not self.wait then
 		    self.wait = true
 		  end
 		  self.recordnumber = self.recordnumber + 1
-	  else	-- reset some variables
-		    
+		  -- ignore reverse Waypoints for mode 6
+		  local in_work_area = false
+		  if self.startWork ~= nil and self.stopWork ~= nil and self.recordnumber >= self.startWork and self.recordnumber <= self.stopWork then
+		    in_work_area = true
+		  end
+		  while self.ai_mode == 6 and self.recordnumber < self.maxnumber and in_work_area and self.Waypoints[self.recordnumber].rev do
+			self.recordnumber = self.recordnumber + 1
+		  end
+		else	-- reset some variables   
 		  self.recordnumber = 1
 		  self.unloaded = false
 		  self.loaded = false		  
-		
 		  self.record = false
-		  self.play = true
-			  
-	  end	
-	  
-  end
+		  self.play = true	  
+	  	end	
+ 	 end
 end;  
 
 
@@ -212,7 +377,7 @@ function courseplay:set_traffc_collision(self, lx, lz)
   
   --print(string.format("colDirX: %f colDirZ %f ",colDirX,colDirZ ))	  
 	  
-  if self.aiTrafficCollisionTrigger ~= nil then
+  if self.aiTrafficCollisionTrigger ~= nil and  SpecializationUtil.hasSpecialization(aiTractor, self) and g_server ~= nil  then
     AIVehicleUtil.setCollisionDirection(self.aiTractorDirectionNode, self.aiTrafficCollisionTrigger, colDirX, colDirZ);
   end
 end

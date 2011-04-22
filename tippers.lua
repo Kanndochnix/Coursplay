@@ -16,25 +16,84 @@ end
 -- update implements to find attached tippers
 function courseplay:update_tools(self, tractor_or_implement)    
   local tipper_attached = false
+  
+  if SpecializationUtil.hasSpecialization(AITractor, tractor_or_implement.specializations) then 
+    local object = tractor_or_implement 
+  	if self.ai_mode == 1 or self.ai_mode == 2 then 
+      -- if SpecializationUtil.hasSpecialization(Trailer, object.specializations) then 
+      if object.allowTipDischarge then 
+        tipper_attached = true 
+        table.insert(self.tippers, object) 
+      end 
+    elseif self.ai_mode == 3 then -- Overlader 
+      if SpecializationUtil.hasSpecialization(Trailer, object.specializations) then --to do 
+        tipper_attached = true 
+        table.insert(self.tippers, object) 
+      end 
+    elseif self.ai_mode == 4 then -- Fertilizer 
+      if SpecializationUtil.hasSpecialization(Sprayer, object.specializations) then 
+        tipper_attached = true 
+        table.insert(self.tippers, object) 
+      end 
+	 elseif self.ai_mode == 6 then -- Baler, foragewagon
+		if SpecializationUtil.hasSpecialization(Baler, object.specializations) then 
+			tipper_attached = true 
+			table.insert(self.tippers, object) 
+		elseif object.allowTipDischarge then
+		  	tipper_attached = true
+		  	table.insert(self.tippers, object)
+		end
+   end 
+  end 
+  
   -- go through all implements
-  for k,implement in pairs(tractor_or_implement.attachedImplements) do
-    
-    local object = implement.object
-    
-    if object.allowTipDischarge or object.allowFillFromAir then
-      tipper_attached = true
-      table.insert(self.tippers, object)
-    end
-    
-	-- are there more tippers attached to the current implement?
-    if table.getn(object.attachedImplements) ~= 0 then	  
-      courseplay:update_tools(self, object)
-    end
-  end
-  if tipper_attached then
-    return true
-  end
-  return nil
+	for k,implement in pairs(tractor_or_implement.attachedImplements) do
+		local object = implement.object
+		if self.ai_mode == 1 or self.ai_mode == 2 then
+		--	if SpecializationUtil.hasSpecialization(Trailer, object.specializations) then
+			if object.allowTipDischarge then
+		  		tipper_attached = true
+		  		table.insert(self.tippers, object)
+			end 
+		elseif self.ai_mode == 3 then -- Overlader
+			if SpecializationUtil.hasSpecialization(Trailer, object.specializations) then --to do 
+		  		tipper_attached = true
+		  		table.insert(self.tippers, object)
+			end
+		elseif self.ai_mode == 4 then -- Fertilizer
+			if SpecializationUtil.hasSpecialization(Sprayer, object.specializations) then
+		  		tipper_attached = true
+		  		table.insert(self.tippers, object)
+			end
+		elseif self.ai_mode == 6 then -- Baler, foragewagon
+			if SpecializationUtil.hasSpecialization(Baler, object.specializations) then 
+				tipper_attached = true 
+				table.insert(self.tippers, object) 
+			elseif object.allowTipDischarge then
+		  		tipper_attached = true
+		  		table.insert(self.tippers, object)
+			end
+		end
+		 -- are there more tippers attached to the current implement? 
+		local other_tipper_attached 
+		if table.getn(object.attachedImplements) ~= 0 then 
+		  other_tipper_attached = courseplay:update_tools(self, object) 
+		end 
+		if other_tipper_attached == true then 
+		  tipper_attached = true 
+		end
+	end
+--[[local mnum = table.getn(self.tippers)
+	for i=1, mnum do
+	    print("/n%d/n", i)
+		for k,v in pairs (self.tippers[i])  do
+			print(k.." "..tostring(v).." "..type(v))
+		end	
+	end]]
+	if tipper_attached then
+		return true
+	end
+	return nil
 end
 
 
@@ -42,10 +101,32 @@ end
 function courseplay:load_tippers(self)
   local allowedToDrive = false
   local cx ,cz = self.Waypoints[2].cx,self.Waypoints[2].cz
+  local tipper_fill_level, tipper_capacity = self:getAttachedTrailersFillLevelAndCapacity()
+  local fill_level = nil
+  if tipper_fill_level ~= nil then
+     fill_level = tipper_fill_level * 100 / tipper_capacity
+  end
   
   if self.currentTrailerToFill == nil then
 	self.currentTrailerToFill = 1
   end
+  
+  -- drive on when required fill level is reached
+ 	  local drive_on = false		   	  
+   	  if self.timeout < self.timer or self.last_fill_level == nil then
+   	    if self.last_fill_level ~= nil and fill_level == self.last_fill_level and fill_level > self.required_fill_level_for_follow then
+   	      drive_on = true
+   	    end
+   	    self.last_fill_level = fill_level
+   	    courseplay:set_timeout(self, 400)
+   	  end
+   	  
+   	  if fill_level == 100 or drive_on then
+   		self.last_fill_level = nil
+   		self.loaded = true
+   		self.lastTrailerToFillDistance = nil
+   		return true
+   	  end
 
   if self.lastTrailerToFillDistance == nil then
   
@@ -142,7 +223,7 @@ function courseplay:unload_tippers(self)
 	local trigger = self.currentTipTrigger
 	-- if trigger accepts fruit
 	--print('In Trigger');
-	if (trigger.acceptedFruitTypes ~= nil and trigger.acceptedFruitTypes[active_tipper:getCurrentFruitType()]) or trigger.className == "MapBGASilo" then
+	if (trigger.acceptedFruitTypes ~= nil and trigger.acceptedFruitTypes[active_tipper:getCurrentFruitType()]) or startswith(trigger.className, "MapBGA")  then
 		allowedToDrive = false
 	else
 		allowedToDrive = true

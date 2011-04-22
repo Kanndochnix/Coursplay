@@ -6,68 +6,106 @@ function courseplay:mouseEvent(posX, posY, isDown, isUp, button)
     else
       self.mouse_enabled = true	    
       if not self.show_hud then
-        self.showHudInfoBase = 1
+        self.showHudInfoBase = self.min_hud_page
         self.show_hud = true
       end
     end
     InputBinding.setShowMouseCursor(self.mouse_enabled)
   end
-  if isDown and self.show_hud and self.isEntered then
+  if isDown and button == 1 and self.show_hud and self.isEntered then
     --print(string.format("posX: %f posY: %f",posX,posY))
     
     for _,button in pairs(self.buttons) do
       if button.page == self.showHudInfoBase or button.page == nil or button.page == self.showHudInfoBase*-1  then
         
         if posX > button.x and posX < button.x2 and posY > button.y and posY < button.y2 then
-          local func = button.function_to_call
-          
-          -- TODO überhaupt nicht DRY das geht bestimmt irgendwie schöner
+          self:setCourseplayFunc(button.function_to_call, button.parameter)          
+        end
+      end
+    end
+  end
+end		
+
+
+function courseplay:setCourseplayFunc(func, value, noEventSend)
+  if noEventSend ~= true then
+		CourseplayEvent.sendEvent(self, func, value);	-- Die Funktion ruft sendEvent auf und übergibt 3 Werte   (self "also mein ID", action, "Ist eine Zahl an der ich festmache welches Fenster ich aufmachen will", state "Ist der eigentliche Wert also true oder false"
+	end;
+	courseplay:deal_with_mouse_input(self, func, value)
+end
+
+function courseplay:deal_with_mouse_input(self, func, value)
+       -- TODO überhaupt nicht DRY das geht bestimmt irgendwie schöner
           if func == "switch_hud_page" then
-            courseplay:switch_hud_page(self, button.parameter)
+            courseplay:switch_hud_page(self, value)
           end
           
           if func == "change_combine_offset" then
-            courseplay:change_combine_offset(self, button.parameter)
+            courseplay:change_combine_offset(self, value)
+          end
+          
+          if func == "add_course" then
+            courseplay:add_course(self, value, false)
+          end
+          
+          if func == "key_input" then
+            courseplay:key_input(self, value)
           end
           
           if func == "load_course" then
-            courseplay:load_course(self, button.parameter)
+            courseplay:load_course(self, value, false)
           end
           
           if func == "save_course" then
             courseplay:input_course_name(self)
           end
           
+           if func == "start" then
+            courseplay:start(self, value)
+          end
+          
+          if func == "stop" then
+            courseplay:stop(self, value)
+          end
+          
+           if func == "drive_on" then
+            self.wait = false
+          end
+          
           if func == "clear_course" then
-            courseplay:clear_course(self, button.parameter)
+            courseplay:clear_course(self, value)
           end
           
           if func == "change_turn_radius" then
-            courseplay:change_turn_radius(self, button.parameter)
+            courseplay:change_turn_radius(self, value)
           end
           
           if func == "change_tipper_offset" then
-            courseplay:change_tipper_offset(self, button.parameter)
+            courseplay:change_tipper_offset(self, value)
           end
           
           if func == "change_required_fill_level" then
-            courseplay:change_required_fill_level(self, button.parameter)
+            courseplay:change_required_fill_level(self, value)
+          end
+          
+          if func == "change_required_fill_level_for_drive_on" then
+            courseplay:change_required_fill_level_for_drive_on(self, value)
           end
           
           if func == "change_turn_speed" then
-            courseplay:change_turn_speed(self, button.parameter)
+            courseplay:change_turn_speed(self, value)
           end
           
           if func == "change_num_ai_helpers" then
-            courseplay:change_num_ai_helpers(self, button.parameter)
+            --courseplay:change_num_ai_helpers(self, value)
           end
           
           if func == "change_field_speed" then
-            courseplay:change_field_speed(self, button.parameter)
+            courseplay:change_field_speed(self, value)
           end
           
           if func == "change_max_speed" then
-            courseplay:change_max_speed(self, button.parameter)
+            courseplay:change_max_speed(self, value)
           end
           
           if func == "switch_search_combine" then
@@ -75,13 +113,23 @@ function courseplay:mouseEvent(posX, posY, isDown, isUp, button)
           end
           
           if func == "change_selected_course" then
-            courseplay:change_selected_course(self, button.parameter)
+            courseplay:change_selected_course(self, value)
           end
+         
           
           if func == "switch_combine" then
-            courseplay:switch_combine(self, button.parameter)
+            courseplay:switch_combine(self, value)
           end
           
+          if func == "changeWpOffsetX" then
+            courseplay:changeCPWpOffsetX(self, value)
+          end
+          
+          if func == "changeWpOffsetZ" then
+            courseplay:changeCPWpOffsetZ(self, value)
+          end
+          
+
           if func == "close_hud" then
             self.mouse_enabled = false
             self.show_hud = false
@@ -89,7 +137,26 @@ function courseplay:mouseEvent(posX, posY, isDown, isUp, button)
           end
           
           
-          if func == "row1" or func == "row2" or func == "row3" then
+          if func == "row1" or func == "row2" or func == "row3" or func == "row4" then
+            if self.showHudInfoBase == 0 then
+              if self.courseplayers == nil or table.getn(self.courseplayers) == 0 then
+                if func == "row1" then
+                  courseplay:call_player(self)
+                end
+              else
+                if func == "row2" then
+                  courseplay:start_stop_player(self)
+                end
+                
+                if func == "row3" then
+                  courseplay:send_player_home(self)
+                end
+                
+                if func == "row4" then
+                  courseplay:switch_player_side(self)
+                end
+              end
+            end
             if self.showHudInfoBase == 1 then
 	            if self.play then
 	              if not self.drive then
@@ -124,12 +191,12 @@ function courseplay:mouseEvent(posX, posY, isDown, isUp, button)
 	            end -- not playing
 	            
 	            if not self.drive  then
-	              if not self.record and (table.getn(self.Waypoints) == 0) then
+	              if (not self.record and not self.record_pause) and (table.getn(self.Waypoints) == 0) then
 	                if func == "row1" then
 	                  courseplay:start_record(self)
 	                end
 	                
-	              elseif not self.record and (table.getn(self.Waypoints) ~= 0) then
+	              elseif (not self.record and not self.record_pause) and (table.getn(self.Waypoints) ~= 0) then
 	              	if func == "row2" then
 	              	  courseplay:change_ai_state(self, 1)
 	              	end
@@ -138,44 +205,62 @@ function courseplay:mouseEvent(posX, posY, isDown, isUp, button)
 	                  courseplay:stop_record(self)
 	                end
 	                
-	                if func == "row2" then
-	                  courseplay:set_waitpoint(self)
-	                end
-	              end
+					if not self.record_pause then
+					  if func == "row2" then  --and self.recordnumber > 3
+						courseplay:set_waitpoint(self)
+					  end
+					  
+					  if func == "row4" then  --and self.recordnumber > 3
+					   courseplay:set_crossing(self)
+					  end
+					  
+					  if func == "row3" then  --and self.recordnumber > 3 
+						courseplay:interrupt_record(self)
+					  end
+					  
+					else
+					  if func == "row2" then  --and self.recordnumber > 4 
+					    courseplay:delete_waypoint(self)
+					  end
+					  if func == "row3" then
+						courseplay:continue_record(self)
+					  end
+					end
+	              end	  
+				  
             	end
             end
             
           end
-          
-        end
-      end
-    end
-  end
-end		
+end
 
 
--- deals with keyEvents
-function courseplay:keyEvent(unicode, sym, modifier, isDown)
- 
-  -- user input fu
-  if isDown and self.user_input_active then
-	if 31 < unicode and unicode < 127 then 
+function courseplay:key_input(self, unicode)
+    if 31 < unicode and unicode < 127 then 
 		if self.user_input:len() <= 20 then
 			self.user_input = self.user_input .. string.char(unicode)
 		end
 	end
 	
 	-- backspace
-	if sym == 8 then
+	if unicode == 8 then
 		if  self.user_input:len() >= 1 then
 			 self.user_input =  self.user_input:sub(1, self.user_input:len() - 1)
 		end
 	end
 	
 	-- enter
-	if sym == 13 then
+	if unicode == 13 then
 		courseplay:handle_user_input(self)
 	end
+end
+
+-- deals with keyEvents
+function courseplay:keyEvent(unicode, sym, modifier, isDown)
+ 
+  -- user input fu
+  if isDown and self.user_input_active then
+  	self:setCourseplayFunc("key_input", unicode)
   end
   
 end;	
@@ -186,15 +271,28 @@ end;
 function courseplay:handle_user_input(self)
 	-- name for current_course
 	if self.save_name then
-	   courseplay:load_courses(self)
-	   self.user_input_active = false
-	   self.current_course_name = self.user_input
-	   course = {name =self.current_course_name, waypoints = self.Waypoints}
-	   table.insert(self.courses, course)
-	   self.user_input = ""	   
-	   self.user_input_message = nil
-	   
-	   courseplay:save_courses(self)
+		--courseplay:load_courses(self)
+		self.user_input_active = false
+		self.current_course_name = self.user_input
+		local maxID = 0
+    	for i=1, table.getn(courseplay_courses) do
+			if courseplay_courses[i].id ~= nil then
+				if courseplay_courses[i].id > maxID then
+            		maxID = courseplay_courses[i].id
+       	 		end
+			end
+    	end
+    	self.courseID = maxID + 1
+		course = {name =self.current_course_name, id = self.courseID, waypoints = self.Waypoints}
+  		if courseplay_courses == nil then
+  	  		courseplay_courses = {}
+		end
+		table.insert(courseplay_courses, course)
+		
+		self.user_input = ""	   
+		self.user_input_message = nil
+		self.steeringEnabled = true   --test
+		courseplay:save_courses(self)
 	end
 end
 

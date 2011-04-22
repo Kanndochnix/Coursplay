@@ -1,19 +1,61 @@
 function courseplay:change_ai_state(self, change_by)
   self.ai_mode = self.ai_mode + change_by
 
-  if self.ai_mode == 5 or self.ai_mode == 0 then  
-    self.ai_mode = 1    
+  if self.ai_mode == 7 or self.ai_mode == 0 then  
+    self.ai_mode = 1     
+  end
+end
+
+function courseplay:call_player(self)
+  if self.wants_courseplayer then  --edit for more sites
+    self.wants_courseplayer = false
+  else
+    self.wants_courseplayer = true
+  end
+end
+
+function courseplay:start_stop_player(self)
+  local tractor = self.courseplayers[1]
+  if tractor.forced_to_stop then  --edit for more sites
+    tractor.forced_to_stop = false
+  else
+    tractor.forced_to_stop = true
+  end
+end
+
+function courseplay:send_player_home(self)
+  local tractor = self.courseplayers[1]
+  tractor.loaded = true
+end
+
+function courseplay:switch_player_side(self)
+  if self.grainTankCapacity == 0 then
+    local tractor = self.courseplayers[1]    
+    if tractor == nil then
+      return
+    end
+    
+    tractor.ai_state = 10
+    
+    if tractor.forced_side == nil then
+      tractor.forced_side = "left"
+    elseif tractor.forced_side == "left" then
+      tractor.forced_side = "right"
+    else
+      tractor.forced_side = nil
+    end
   end
 end
 
 function courseplay:switch_hud_page(self, change_by)
   self.showHudInfoBase = self.showHudInfoBase + change_by
-  if self.showHudInfoBase == 0 then  --edit for more sites
-    self.showHudInfoBase = 1
+    
+  if self.showHudInfoBase < self.min_hud_page then  --edit for more sites
+    self.showHudInfoBase = self.min_hud_page
    end
 
-   if self.showHudInfoBase == 6 then  --edit for more sites
-     self.showHudInfoBase = 5
+   if self.showHudInfoBase == 7 then  --edit for more sites
+     self.showHudInfoBase = 6
    end
 end
 
@@ -38,6 +80,29 @@ function courseplay:change_tipper_offset(self, change_by)
 
 end
 
+
+function courseplay:changeCPWpOffsetX(self, change_by)
+  self.WpOffsetX = self.WpOffsetX + change_by
+
+end
+
+function courseplay:changeCPWpOffsetZ(self, change_by)
+  self.WpOffsetZ = self.WpOffsetZ + change_by
+
+end
+
+
+function courseplay:change_required_fill_level_for_drive_on(self, change_by)
+	self.required_fill_level_for_drive_on = self.required_fill_level_for_drive_on + change_by
+
+	if self.required_fill_level_for_drive_on < 0 then
+		self.required_fill_level_for_drive_on = 0
+	end
+
+	if self.required_fill_level_for_drive_on > 100 then
+		self.required_fill_level_for_drive_on = 100
+	end
+end
 
 
 function courseplay:change_required_fill_level(self, change_by)
@@ -121,12 +186,12 @@ end
 
 
 function courseplay:change_selected_course(self, change_by)
-    courseplay:load_courses(self)
+    
 	local selected_course_number = self.selected_course_number
 	selected_course_number = selected_course_number + change_by
 	
 	local number_of_courses = 0
-	for k,trigger in pairs(self.courses) do 
+	for k,trigger in pairs(courseplay_courses) do 
 	  number_of_courses = number_of_courses + 1
 	end
 	
