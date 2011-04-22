@@ -158,12 +158,12 @@ function courseplay:unload_combine(self, dt)
   if self.currentTrailerToFill ~= nil then
   	xt, yt, zt = worldToLocal(self.tippers[self.currentTrailerToFill].rootNode, x, y, z)
 		if self.tippers[self.currentTrailerToFill].tipper_offset ~= nil then
-			offset = self.tippers[self.currentTrailerToFill].tipper_offset;
+			offset = offset + self.tippers[self.currentTrailerToFill].tipper_offset;
 		end
   else
     xt, yt, zt = worldToLocal(self.tippers[1].rootNode, x, y, z)
 		if self.tippers[1].tipper_offset ~= nil then
-			offset = self.tippers[1].tipper_offset;
+			offset = offset + self.tippers[1].tipper_offset;
 		end;
   end
   
@@ -287,7 +287,8 @@ function courseplay:unload_combine(self, dt)
 	    table.insert(self.next_targets, next_wp) 
 	    
 	    -- insert another point behind combine
-	    local next_x, next_y, next_z = localToWorld(combine.rootNode, 0, 0, -30)
+	    --local next_x, next_y, next_z = localToWorld(combine.rootNode, 0, 0, -30)
+	    local next_x, next_y, next_z = localToWorld(combine.rootNode, 0, 0, -35)
 	    local next_wp = {x = next_x, y=next_y, z=next_z}
 	    
 	    table.insert(self.next_targets, next_wp) 
@@ -408,7 +409,8 @@ function courseplay:unload_combine(self, dt)
 	      table.insert(self.next_targets, next_wp) 
 	      
 	      -- insert another point behind combine
-	      local next_x, next_y, next_z = localToWorld(combine.rootNode, 0, 0, -30)
+	      --local next_x, next_y, next_z = localToWorld(combine.rootNode, 0, 0, -30)
+	      local next_x, next_y, next_z = localToWorld(combine.rootNode, 0, 0, -35)
 	      local next_wp = {x = next_x, y=next_y, z=next_z}
 	      
 	      table.insert(self.next_targets, next_wp) 
@@ -536,7 +538,7 @@ function courseplay:unload_combine(self, dt)
 	  end
   end  
 
-	if self.target_x ~= nil and self.target_z ~= nil then	
+	--[[if self.target_x ~= nil and self.target_z ~= nil then	
 		if self.oldCX1 == nil and self.oldCZ1	== nil then
 			self.mySign1 = courseplay:addsign(self, self.target_x, 0, self.target_z);
 		elseif self.oldCX1 ~= self.target_x or self.oldCZ1 ~= self.target_z then
@@ -560,7 +562,7 @@ function courseplay:unload_combine(self, dt)
 		self.mySign1 = nil;
 	end;
 		self.oldCX1 = self.target_x;
-		self.oldCZ1 = self.target_z;
+		self.oldCZ1 = self.target_z;]]
 	
   self.ai_state = mode  
   
@@ -605,34 +607,39 @@ function courseplay:unload_combine(self, dt)
 	   end
 	 end   
 		 
-	 	if cx ~= nil and cz ~= nil then	
-			if self.oldCX == nil and self.oldCZ	== nil then
-				self.mySign = courseplay:addsign(self, cx, 0, cz);
-			elseif self.oldCX ~= cx or self.oldCZ ~= cz then
-				if self.mySign ~= nil then
-					delete(self.mySign);
-					for k,v in pairs(self.signs) do    
-						if v == self.mySign then
-							table.remove(self.signs, k);
-						end;
-					end
-				end;
-				self.mySign = courseplay:addsign(self, cx, 0, cz);
+	--[[if cx ~= nil and cz ~= nil then	
+		if self.oldCX == nil and self.oldCZ	== nil then
+			self.mySign = courseplay:addsign(self, cx, 0, cz);
+		elseif self.oldCX ~= cx or self.oldCZ ~= cz then
+			if self.mySign ~= nil then
+				delete(self.mySign);
+				for k,v in pairs(self.signs) do    
+					if v == self.mySign then
+						table.remove(self.signs, k);
+					end;
+				end
 			end;
-		elseif self.mySign ~= nil and cx == nil and cz == nil then
-			delete(self.mySign);
-			for k,v in pairs(self.signs) do    
-				if v == self.mySign then
-					table.remove(self.signs, k);
-				end;
-			end
-			self.mySign = nil;
+			self.mySign = courseplay:addsign(self, cx, 0, cz);
 		end;
-		self.oldCX = cx;
-		self.oldCZ = cz;
-		
-	-- C.Schoch
-  
+	elseif self.mySign ~= nil and cx == nil and cz == nil then
+		delete(self.mySign);
+		for k,v in pairs(self.signs) do    
+			if v == self.mySign then
+				table.remove(self.signs, k);
+			end;
+		end
+		self.mySign = nil;
+	end;
+	self.oldCX = cx;
+	self.oldCZ = cz;]]	
+	
+	local xt,yt,zt = getTranslation(self.components[1].node);
+	local deltaWater = yt-g_currentMission.waterY+2.5;
+	if deltaWater < 2 then
+		allowedToDrive = false;
+	end;
+  -- C.Schoch
+	
   if not allowedToDrive then
 	local lx, lz = 0, 1
 	self.motor:setSpeedLevel(0, false);
