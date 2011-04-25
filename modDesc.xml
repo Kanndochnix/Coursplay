@@ -19,12 +19,12 @@
 		www.modhoster.de]]>
 		</de>
  	</description>
-    	<multiplayer supported="false"/>   
+    	<multiplayer supported="true"/>   
 	<iconFilename>
 		<en>store.png</en>
 		<de>store.png</de>
  	</iconFilename>
-	<version>1.00</version>
+	<version>1.2</version>
     <l10n>
 	<text name="PointRecordStart">
 		<en>Record Course Start</en>
@@ -62,6 +62,11 @@
 	</text>
 
 	<text name="CourseMode4">
+		<en>Type: fertilice</en>
+		<de>Typ: Duengen</de>
+	</text>
+	
+	<text name="CourseMode5">
 		<en>Type: Target</en>
 		<de>Typ: Überführung (Route abfahren)</de>
 	</text>
@@ -166,6 +171,11 @@
     <text name="CPReachedWaitPoint">
       <en>has reached waitpoint.</en>
       <de>hat Wartepunkt erreicht.</de>
+    </text>
+
+    <text name="CPWorkEnd">
+      <en>has work finished.</en>
+      <de>hat die Aufgabe erledigt.</de>
     </text>
     
     <text name="CPInTraffic">
@@ -288,7 +298,17 @@
       <en>manage courses</en>
       <de>Kurse verwalten</de>
     </text>
+
     
+    <text name="CPNoWorkArea">
+      <en>no work area at this course</en>
+      <de>Kein Arbeitsbereich in diesem Kurs</de>
+    </text>
+    
+    <text name="CPCourseAdded">
+      <en>course combined</en>
+      <de>Kombinierter Kurs</de>
+    </text>
     
     <text name="CPCombiSettings">
       <en>Settings combi mode</en>
@@ -356,6 +376,21 @@
       <en>following tractor</en>
       <de>Fahre hinter Traktor</de>
     </text>
+
+    <text name="CPFuelWarning">
+      <en>to refuel soon</en>
+      <de>sollte aufgetankt werden</de>
+    </text>
+   
+    <text name="CPNoFuelStop">
+      <en>must be refueled</en>
+      <de>muss aufgetankt werden</de>
+    </text>
+	
+    <text name="CPWrongTrailer">
+      <en>wrong trailer for this mode</en>
+      <de>falscher Trailer für diesen Modus</de>
+    </text>
     
 
     </l10n>
@@ -373,6 +408,7 @@
 		<sourceFile filename="input.lua" />
 		<sourceFile filename="mode1.lua" />
 		<sourceFile filename="mode2.lua" />
+		<sourceFile filename="mode4.lua" />
 		<sourceFile filename="recording.lua" />
 		<sourceFile filename="signs.lua" />
 		<sourceFile filename="start_stop.lua" />
@@ -380,6 +416,7 @@
 		<sourceFile filename="triggers.lua" />
 		<sourceFile filename="hud.lua" />
 		<sourceFile filename="settings.lua" />
+		<sourceFile filename="event.lua" />
     </extraSourceFiles>   
 
 	<inputBindings>

@@ -68,6 +68,7 @@ function courseplay:load(xmlFile)
 	self.locales.CPTriggerReached= g_i18n:getText("CPTriggerReached")
 	self.locales.CPSteering= g_i18n:getText("CPSteering")
 	self.locales.CPManageCourses= g_i18n:getText("CPManageCourses")
+	self.locales.CPCourseAdded= g_i18n:getText("CPCourseAdded")
 	self.locales.CPCombiSettings= g_i18n:getText("CPCombiSettings")
 	self.locales.CPManageCombines= g_i18n:getText("CPManageCombines")
 	self.locales.CPSpeedLimit= g_i18n:getText("CPSpeedLimit")	
@@ -76,6 +77,7 @@ function courseplay:load(xmlFile)
 	self.locales.CPNoCourseLoaded = g_i18n:getText("CPNoCourseLoaded")
 	self.locales.CPWaypoint = g_i18n:getText("CPWaypoint")
 	self.locales.CPNoWaypoint = g_i18n:getText("CPNoWaypoint")
+	self.locales.CPWorkEnd = g_i18n:getText("CPWorkEnd")
 	self.locales.CPFieldSpeed = g_i18n:getText("CPFieldSpeed")
 	self.locales.CPMaxSpeed = g_i18n:getText("CPMaxSpeed")	
 	self.locales.CPFindAuto = g_i18n:getText("CPFindAuto")
@@ -113,6 +115,11 @@ function courseplay:load(xmlFile)
 	self.locales.CourseMode3 = g_i18n:getText("CourseMode3")
 	self.locales.CourseMode4 = g_i18n:getText("CourseMode4")
 	self.locales.CourseMode5 = g_i18n:getText("CourseMode5")
+	self.locales.CPFuelWarning = g_i18n:getText("CPFuelWarning")
+    self.locales.CPNoFuelStop = g_i18n:getText("CPNoFuelStop")
+	self.locales.CPWrongTrailer = g_i18n:getText("CPWrongTrailer")
+    self.locales.CPNoWorkArea = g_i18n:getText("CPNoWorkArea")
+
 	
 	self.lastGui = nil
 	self.currentGui = nil
@@ -142,13 +149,16 @@ function courseplay:load(xmlFile)
 	
 	-- global info text - also displayed when not in vehicle
 	self.global_info_text = nil
-	
+	self.testhe = false
 	
 	-- ai mode: 1 abfahrer, 2 kombiniert
 	self.ai_mode = 1
 	self.follow_mode = 1
 	self.ai_state = 1
 	self.next_ai_state = nil
+	self.startWork = nil
+	self.stopWork = nil
+	self.abortWork = nil
 	
 -- C.Schoch
 self.oldDistance = 100;
@@ -177,7 +187,7 @@ self.pFactor = 3000;
 	
 	-- course name for saving
 	self.current_course_name = nil
-	
+	self.direction = nil
 	-- forced waypoints	
 	self.target_x = nil
 	self.target_y = nil
@@ -190,7 +200,7 @@ self.pFactor = 3000;
 	self.max_speed = 50 / 3600
 	self.turn_speed = 10 / 3600
 	self.field_speed = 24 / 3600
-	
+	self.sl = 3
 	self.tools_dirty = false
 	
 	self.orgRpm = nil
@@ -250,10 +260,10 @@ self.pFactor = 3000;
 	self.mouse_enabled = false	
 
 	-- HUD  	-- Function in Signs
-	self.hudInfoBasePosX = 0.005; -- 0.755 
-	self.hudInfoBaseWidth = 0.320; 
+	self.hudInfoBasePosX = 0.433; -- 0.755
+	self.hudInfoBaseWidth = 0.319; 
 	self.hudInfoBasePosY = 0.005;  -- 0.210
-	self.hudInfoBaseHeight = 0.287; 
+	self.hudInfoBaseHeight = 0.287;
 	
 	self.infoPanelPath = Utils.getFilename("../aacourseplay/img/hud_bg.png", self.baseDirectory);
 	self.hudInfoBaseOverlay = Overlay:new("hudInfoBaseOverlay", self.infoPanelPath, self.hudInfoBasePosX, self.hudInfoBasePosY, self.hudInfoBaseWidth, self.hudInfoBaseHeight);
@@ -298,8 +308,8 @@ self.pFactor = 3000;
     courseplay:register_button(self, 2, "blank.png", "row2", nil, self.hudInfoBasePosX-0.05, self.hudInfoBasePosY + 0.185, 0.32, 0.015)
     courseplay:register_button(self, 2, "blank.png", "row3", nil, self.hudInfoBasePosX-0.05, self.hudInfoBasePosY + 0.164, 0.32, 0.015)
     
-    courseplay:register_button(self, 2, "navigate_up.png",   "change_selected_course", -1, self.hudInfoBasePosX + 0.285, self.hudInfoBasePosY +0.222, 0.020, 0.020)
-    courseplay:register_button(self, 2, "navigate_down.png", "change_selected_course", 1, self.hudInfoBasePosX + 0.285, self.hudInfoBasePosY +0.120, 0.020, 0.020)
+    courseplay:register_button(self, 2, "navigate_up.png",   "change_selected_course", -5, self.hudInfoBasePosX + 0.285, self.hudInfoBasePosY +0.222, 0.020, 0.020)
+    courseplay:register_button(self, 2, "navigate_down.png", "change_selected_course", 5, self.hudInfoBasePosX + 0.285, self.hudInfoBasePosY +0.120, 0.020, 0.020)
     
     for i = 1, 5, 1 do    
       local posy = self.hudInfoBasePosY + 0.205 - (i-1) * 0.021
@@ -336,6 +346,8 @@ self.pFactor = 3000;
     courseplay:register_button(self, 5, "navigate_minus.png", "change_max_speed", -1, self.hudInfoBasePosX + 0.285, self.hudInfoBasePosY +0.167, 0.010, 0.010)
     courseplay:register_button(self, 5, "navigate_plus.png", "change_max_speed", 1, self.hudInfoBasePosX + 0.300, self.hudInfoBasePosY +0.167, 0.010, 0.010)
     
+    
+    self.fold_move_direction = 1
 end	
 
 
@@ -364,32 +376,26 @@ function courseplay:draw()
 	end
 
     courseplay:showHud(self)
+    
+    
 end
 
 -- is been called everey frame
 function courseplay:update(dt)
-	--attached or detached implement?
-	if self.tools_dirty then
-	  courseplay:reset_tools(self)
-	end
 	
-	--if self.user_input_active == true then
-	--  if self.currentGui == nil then
-	--    g_gui:loadGui(Utils.getFilename("../aacourseplay/emptyGui.xml", self.baseDirectory), self.input_gui);
-	--    g_gui:showGui(self.input_gui);
-	--    self.currentGui = self.input_gui
-	--  end
-    --else
-    --  if self.currentGui == self.input_gui then
-    --    g_gui:showGui("");
-    --  end
-    --end
-    
     if self.user_input_message then
       courseplay:user_input(self);
     end
 
-	-- show visual waypoints only when in vehicle
+end		
+
+function courseplay:updateTick(dt)
+  --attached or detached implement?
+	if self.tools_dirty then
+	  courseplay:reset_tools(self)
+	end
+
+  -- show visual waypoints only when in vehicle
 	if self.isEntered then
 		courseplay:sign_visibility(self, true)
 	else
@@ -407,8 +413,8 @@ function courseplay:update(dt)
 	end	
 	
 	courseplay:infotext(self);
-	self.timer = self.timer + 1
-end		
+	self.timer = self.timer + 1	
+end
 
 function courseplay:delete()
 	if self.aiTrafficCollisionTrigger ~= nil then
@@ -419,6 +425,16 @@ end;
 function courseplay:set_timeout(self, interval)
   self.timeout = self.timer + interval
 end
+
+-- wird am Server aufgerufen wenn ein Spieler joint
+function courseplay:writeStream(streamId, connection)	
+
+end;
+
+-- wird Aufgerufen wenn ich selber ein Spiel join
+function courseplay:readStream(streamId, connection)	
+
+end;
 
 
 function courseplay:get_locale(self, key)

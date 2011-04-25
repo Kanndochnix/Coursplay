@@ -3,7 +3,7 @@
 -- Specialization for Courseplay
 --
 -- @author  Lautschreier / Hummel / Wolverin0815
--- @version:	v0.99.26.03.11
+-- @version:	v1.2.20.04.2011
 -- @testing:    bullgore80
 
 courseplay = {};
@@ -22,6 +22,7 @@ source(courseplay_path.."recording.lua")
 -- drive Modes
 source(courseplay_path.."mode1.lua")
 source(courseplay_path.."mode2.lua")
+source(courseplay_path.."mode4.lua")
 
 -- course recording & resetting
 source(courseplay_path.."drive.lua")
@@ -55,3 +56,7 @@ source(courseplay_path.."debug.lua")
 source(courseplay_path.."button.lua")
 source(courseplay_path.."hud.lua")
 source(courseplay_path.."settings.lua")
+
+
+-- mp events
+source(courseplay_path.."event.lua")
