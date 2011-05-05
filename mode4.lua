@@ -1,8 +1,8 @@
-
-function courseplay:handle_mode4(self, workArea, workSpeed)
+function courseplay:handle_mode4(self,allowedToDrive, workArea, workSpeed,  fill_level, last_recordnumber)
 	local workTool = self.tippers[1] -- to do, quick, dirty and unsafe
     local IsFoldable = SpecializationUtil.hasSpecialization(Foldable, workTool.specializations)
-	
+   	local IsAnimated = workTool.setAnimationTime ~= nil;
+		
 		workArea = (self.recordnumber > self.startWork) and (self.recordnumber < self.stopWork)
 		-- Beginn Work
 		if last_recordnumber == self.startWork and fill_level ~= 0 then
@@ -23,10 +23,10 @@ function courseplay:handle_mode4(self, workArea, workSpeed)
 		--	print(string.format("Abort: %d StopWork: %d",self.abortWork,self.stopWork))
         end
 
-		
-		
+
+
 		-- stop while folding	
-			
+
 		if IsFoldable then
 		  for k,foldingPart in pairs(workTool.foldingParts) do
 		  	local charSet = foldingPart.animCharSet;
@@ -36,7 +36,7 @@ function courseplay:handle_mode4(self, workArea, workSpeed)
 		  	 else
 		  	   animTime = workTool:getRealAnimationTime(foldingPart.animationName);
 		  	 end;
-		  	 
+
 		  	 if animTime ~= nil then
 		  	   if workTool.foldMoveDirection > 0.1 then
 		  	     if animTime < foldingPart.animDuration then
@@ -48,15 +48,24 @@ function courseplay:handle_mode4(self, workArea, workSpeed)
 		  	 	  end
 		  	   end
 		  	 end
-		    
+
 		  end		  
 		end
+		
+		if IsAnimated then
+			if not workTool.animationParts[1].inputDone then
+				allowedToDrive = false;
+			end;
+		end;
 		
 		if workArea and fill_level ~= 0 and self.abortWork == nil then
 		  workSpeed = true
 		  if IsFoldable then
 		    workTool:setFoldDirection(self.fold_move_direction*-1)
 		  end
+			if IsAnimated then
+				workTool:setAnimationTime(1, workTool.animationParts[1].animDuration);
+			end;
 		  if allowedToDrive then
 		    workTool:setIsTurnedOn(true,false)
 		  end
@@ -65,12 +74,15 @@ function courseplay:handle_mode4(self, workArea, workSpeed)
          if IsFoldable then
            workTool:setFoldDirection(self.fold_move_direction)
 		 end
+			if IsAnimated then
+				workTool:setAnimationTime(1, workTool.animationParts[1].startPosition);
+			end;
          workTool:setIsTurnedOn(false,false)
        end 
        
        if not allowedToDrive then
        	 workTool:setIsTurnedOn(false,false)
        end       
-		
+
 	return allowedToDrive, workArea, workSpeed
 end

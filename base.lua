@@ -108,6 +108,9 @@ function courseplay:load(xmlFile)
 	self.locales.ModusSet = g_i18n:getText("ModusSet")
 	self.locales.PointRecordStop = g_i18n:getText("PointRecordStop")
 	self.locales.CourseWaitpointSet = g_i18n:getText("CourseWaitpointSet")
+	self.locales.PointRecordInterrupt = g_i18n:getText("PointRecordInterrupt")
+	self.locales.PointRecordContinue = g_i18n:getText("PointRecordContinue")
+	self.locales.PointRecordDelete = g_i18n:getText("PointRecordDelete")	
 	self.locales.CourseDel = g_i18n:getText("CourseDel")
 	self.locales.CourseSave = g_i18n:getText("CourseSave")
 	self.locales.CourseMode1 = g_i18n:getText("CourseMode1")
@@ -115,11 +118,13 @@ function courseplay:load(xmlFile)
 	self.locales.CourseMode3 = g_i18n:getText("CourseMode3")
 	self.locales.CourseMode4 = g_i18n:getText("CourseMode4")
 	self.locales.CourseMode5 = g_i18n:getText("CourseMode5")
+	self.locales.CourseMode6 = g_i18n:getText("CourseMode6")
 	self.locales.CPFuelWarning = g_i18n:getText("CPFuelWarning")
     self.locales.CPNoFuelStop = g_i18n:getText("CPNoFuelStop")
 	self.locales.CPWrongTrailer = g_i18n:getText("CPWrongTrailer")
     self.locales.CPNoWorkArea = g_i18n:getText("CPNoWorkArea")
 
+	
 	
 	self.lastGui = nil
 	self.currentGui = nil
@@ -246,6 +251,8 @@ self.pFactor = 3000;
 	self.chopper_offset = 8
 	self.tipper_offset = 8
 	self.auto_mode = nil
+	self.forced_side = nil
+	self.forced_to_stop = false
 	
 	self.allow_following = false
 	self.required_fill_level_for_follow = 50
@@ -376,26 +383,32 @@ function courseplay:draw()
 	end
 
     courseplay:showHud(self)
-    
-    
 end
 
 -- is been called everey frame
 function courseplay:update(dt)
+	--attached or detached implement?
+	if self.tools_dirty then
+	  courseplay:reset_tools(self)
+	end
 	
+	--if self.user_input_active == true then
+	--  if self.currentGui == nil then
+	--    g_gui:loadGui(Utils.getFilename("../aacourseplay/emptyGui.xml", self.baseDirectory), self.input_gui);
+	--    g_gui:showGui(self.input_gui);
+	--    self.currentGui = self.input_gui
+	--  end
+    --else
+    --  if self.currentGui == self.input_gui then
+    --    g_gui:showGui("");
+    --  end
+    --end
+    
     if self.user_input_message then
       courseplay:user_input(self);
     end
 
-end		
-
-function courseplay:updateTick(dt)
-  --attached or detached implement?
-	if self.tools_dirty then
-	  courseplay:reset_tools(self)
-	end
-
-  -- show visual waypoints only when in vehicle
+	-- show visual waypoints only when in vehicle
 	if self.isEntered then
 		courseplay:sign_visibility(self, true)
 	else
@@ -413,8 +426,8 @@ function courseplay:updateTick(dt)
 	end	
 	
 	courseplay:infotext(self);
-	self.timer = self.timer + 1	
-end
+	self.timer = self.timer + 1
+end		
 
 function courseplay:delete()
 	if self.aiTrafficCollisionTrigger ~= nil then
@@ -425,16 +438,6 @@ end;
 function courseplay:set_timeout(self, interval)
   self.timeout = self.timer + interval
 end
-
--- wird am Server aufgerufen wenn ein Spieler joint
-function courseplay:writeStream(streamId, connection)	
-
-end;
-
--- wird Aufgerufen wenn ich selber ein Spiel join
-function courseplay:readStream(streamId, connection)	
-
-end;
 
 
 function courseplay:get_locale(self, key)

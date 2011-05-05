@@ -72,10 +72,19 @@ function courseplay:drive(self, dt)
 			if last_recordnumber == self.stopWork and self.abortWork ~= nil then
 		    	self.wait = false
 			end
-			if last_recordnumber == self.stopWork and self.abortWork== nil then
+			if last_recordnumber == self.stopWork and self.abortWork == nil then
 		    	self.global_info_text = courseplay:get_locale(self, "CPWorkEnd") --'hat Arbeit beendet.'
 			end
-			
+		elseif self.ai_mode == 6 then
+			if last_recordnumber == self.startWork and fill_level ~= 100 then
+				self.wait = false
+			end
+			if last_recordnumber == self.stopWork and self.abortWork ~= nil then
+		    	self.wait = false
+			end
+			if last_recordnumber == self.stopWork and self.abortWork == nil then
+		    	self.global_info_text = courseplay:get_locale(self, "CPWorkEnd") --'hat Arbeit beendet.'
+			end
   		else
 		   	self.global_info_text = courseplay:get_locale(self, "CPReachedWaitPoint") --'hat Wartepunkt erreicht.'
 		end
@@ -121,10 +130,11 @@ function courseplay:drive(self, dt)
 			self.info_text = self.locales.CPNoWorkArea
  		end
  		
- 		if self.ai_mode ~= 5 and not self.tipper_attached then
+ 		if self.ai_mode ~= 5 and self.ai_mode ~= 6 and not self.tipper_attached then
  		    self.info_text = self.locales.CPWrongTrailer
  		    allowedToDrive = false
 		end
+		
  		
  		if self.fuelFillLevel < 50 then
  			self.global_info_text = self.locales.CPFuelWarning
@@ -134,16 +144,19 @@ function courseplay:drive(self, dt)
  		end
   	end
   
- 
-	-- ai_mode 4 = fertilize
-	local workArea = nil
-	local workSpeed = nil
-		
+   -- ai_mode 4 = fertilize
+	local workArea = false
+	local workSpeed = false
+
 	if self.ai_mode == 4 and self.tipper_attached and self.startWork ~= nil and self.stopWork ~= nil   then
-		allowedToDrive, workArea, workSpeed = courseplay:handle_mode4(self, workArea, workSpeed)
-	else
-		workArea = false
-		workSpeed = false
+		allowedToDrive, workArea, workSpeed = courseplay:handle_mode4(self,allowedToDrive, workArea, workSpeed, fill_level, last_recordnumber)
+	end
+	
+	-- Mode 6 Fieldwork for balers and foragewagon
+	if self.ai_mode == 6 and self.startWork ~= nil and self.stopWork ~= nil then
+		-- is there a tipTrigger within 10 meters?
+		raycastAll(tx, ty, tz, nx, ny, nz, "findTipTriggerCallback", 10, self)
+		allowedToDrive, workArea, workSpeed, active_tipper = courseplay:handle_mode6(self, allowedToDrive, workArea, workSpeed, fill_level, last_recordnumber)
 	end
   
   
@@ -184,7 +197,7 @@ function courseplay:drive(self, dt)
 		slowDownRev = self.Waypoints[self.recordnumber].rev
 	end
 
-	if slowDownWP or slowDownRev or self.max_speed_level == 1 then
+	if slowDownWP or self.ai_mode ~= 6 and slowDownRev or self.max_speed_level == 1 then
 		self.sl = 1
     	ref_speed = self.turn_speed
 	elseif slowStartEnd or workSpeed then
@@ -248,6 +261,10 @@ function courseplay:drive(self, dt)
 		    self.wait = true
 		  end
 		  self.recordnumber = self.recordnumber + 1
+		  -- ignore reverse Waypoints for mode 6
+		  while self.ai_mode == 6 and self.recordnumber < self.maxnumber and self.recordnumber >= self.startWork and self.recordnumber <= self.stopWork and self.Waypoints[self.recordnumber].rev do
+			self.recordnumber = self.recordnumber + 1
+		  end
 		else	-- reset some variables   
 		  self.recordnumber = 1
 		  self.unloaded = false
@@ -277,7 +294,7 @@ function courseplay:set_traffc_collision(self, lx, lz)
   
   --print(string.format("colDirX: %f colDirZ %f ",colDirX,colDirZ ))	  
 	  
-  if self.aiTrafficCollisionTrigger ~= nil then
+  if self.aiTrafficCollisionTrigger ~= nil and  SpecializationUtil.hasSpecialization(aiTractor, self)  then
     AIVehicleUtil.setCollisionDirection(self.aiTractorDirectionNode, self.aiTrafficCollisionTrigger, colDirX, colDirZ);
   end
 end

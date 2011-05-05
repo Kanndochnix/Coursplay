@@ -9,6 +9,7 @@ function courseplay:start(self)
 	self.numToolsCollidingVehicles = {};
 	self.drive  = false
 	self.record = false
+	self.record_pause = false
 	
 	
 	if self.ai_mode == 4 and self.tipper_attached then
@@ -38,7 +39,7 @@ function courseplay:start(self)
 	local cx ,cz = self.Waypoints[self.recordnumber].cx,self.Waypoints[self.recordnumber].cz
 	-- distance
 	dist = courseplay:distance(ctx ,ctz ,cx ,cz)	
-	if (self.ai_mode == 1 and self.tipper_attached) or (self.loaded and self.ai_mode == 2) then
+	if (self.ai_mode ~= 2 and self.ai_state == 1) or (self.ai_mode == 2 and self.loaded) then
 		local nearestpoint = dist
 		local wpanz = 0
 		-- search nearest Waypoint
@@ -51,7 +52,7 @@ function courseplay:start(self)
 				self.recordnumber = i + 1
 			end
 			-- specific Workzone
-	        if self.ai_mode == 4 then
+	        if self.ai_mode == 4 or self.ai_mode == 6 then
 	            if wait then
 	                wpanz = wpanz + 1
 				end
@@ -63,7 +64,13 @@ function courseplay:start(self)
 	                self.stopWork = i
 				end
 			end
+		
 	    end
+		-- mode 6 without start and stop point, set them at start and end, for only-on-field-courses
+		if self.ai_mode == 6 and wpanz == 0 then
+			self.startWork = 1
+			self.stopWork = self.maxnumber
+		end			
 	  --  print(string.format("StartWork: %d StopWork: %d",self.startWork,self.stopWork))
 	    if self.recordnumber > self.maxnumber then
 				self.recordnumber = 1
@@ -73,6 +80,7 @@ function courseplay:start(self)
 	--if dist < 15 then
 		-- hire a helper
 		--self:hire()
+		self.isAtCourse = true;
 		self.forceIsActive = true;
 		self.stopMotorOnLeave = false;
   		self.steeringEnabled = false;
@@ -96,6 +104,7 @@ end
 -- stops driving the course
 function courseplay:stop(self)
 	--self:dismiss()
+		self.isAtCourse = false;
 	self.forceIsActive = false;
 	self.stopMotorOnLeave = true;
   	self.steeringEnabled = true;
@@ -105,6 +114,7 @@ function courseplay:stop(self)
 	self.motor.maxRpm[2] = self.orgRpm[2] 
 	self.motor.maxRpm[3] = self.orgRpm[3] 
 	self.record = false
+	self.record_pause = false
 	if self.ai_state > 4 then
 	  self.ai_state = 1
 	end
@@ -118,7 +128,9 @@ function courseplay:stop(self)
 	if self.tipper_attached then
 		for key,tipper in pairs(self.tippers) do
 		  AITractor.removeToolTrigger(self, tipper)
-		  tipper:aiTurnOff()
+		  if SpecializationUtil.hasSpecialization(Attachable, tipper.specializations) then
+			tipper:aiTurnOff()
+		  end
 		end
 	end
 	
