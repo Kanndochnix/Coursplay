@@ -11,13 +11,14 @@ function courseplay:record(self)
 
 	if self.recordnumber < 2 then
 		self.rotatedTime = 0
-	end 
+	end
+	
 	if self.recordnumber > 2 then
 		local oldcx ,oldcz ,oldangle= self.Waypoints[self.recordnumber - 1].cx,self.Waypoints[self.recordnumber - 1].cz,self.Waypoints[self.recordnumber - 1].angle
 		anglediff = math.abs(newangle - oldangle)
 		self.dist = courseplay:distance(cx ,cz ,oldcx ,oldcz)
 		if self.direction then
-		 	if self.dist > 3 and (anglediff > 2 or dist > 5)  then
+		 	if self.dist > 1 and (anglediff > 2 or dist > 5)  then
 				self.tmr = 101
 			end
 		else
@@ -47,10 +48,16 @@ function courseplay:record(self)
 		else
 			self.tmr = 1
 		end
-	end 
-	 
+	end
+	
+	local set_crossing = false
+	
+	if self.recordnumber == 1 then
+	  set_crossing = true
+	end
+	
 	if self.tmr > 100 then 
-		self.Waypoints[self.recordnumber] = {cx = cx ,cz = cz ,angle = newangle, wait = false, rev = self.direction}
+		self.Waypoints[self.recordnumber] = {cx = cx ,cz = cz ,angle = newangle, wait = false, rev = self.direction, crossing = set_crossing}
 		if self.recordnumber < 4 then
 			courseplay:addsign(self, cx, cy,cz)
 		end
@@ -67,9 +74,25 @@ function courseplay:set_waitpoint(self)
 	local dX = x/length
 	local dZ = z/length
 	local newangle = math.deg(math.atan2(dX,dZ)) 
-  self.Waypoints[self.recordnumber] = {cx = cx ,cz = cz ,angle = newangle, wait = true, rev = self.direction}
+  self.Waypoints[self.recordnumber] = {cx = cx ,cz = cz ,angle = newangle, wait = true, rev = self.direction, crossing = false}
   self.tmr = 1
   self.recordnumber = self.recordnumber + 1
+  self.waitPoints = self.waitPoints + 1
+  courseplay:addsign(self, cx, cy,cz)  
+end
+
+
+function courseplay:set_crossing(self)
+  local cx,cy,cz = getWorldTranslation(self.rootNode);
+  local x,y,z = localDirectionToWorld(self.rootNode, 0, 0, 1);
+  local length = Utils.vector2Length(x,z);
+  local dX = x/length
+  local dZ = z/length
+  local newangle = math.deg(math.atan2(dX,dZ)) 
+  self.Waypoints[self.recordnumber] = {cx = cx ,cz = cz ,angle = newangle, wait = false, rev = self.direction, crossing = true}
+  self.tmr = 1
+  self.recordnumber = self.recordnumber + 1
+  self.crossPoints = self.crossPoints + 1
   courseplay:addsign(self, cx, cy,cz)  
 end
 
@@ -82,12 +105,13 @@ function courseplay:set_direction(self)
 	local dZ = z/length
 	local newangle = math.deg(math.atan2(dX,dZ))
 	local fwd = nil
-  	self.Waypoints[self.recordnumber] = {cx = cx ,cz = cz ,angle = newangle, wait = false, rev = self.direction}
+  	self.Waypoints[self.recordnumber] = {cx = cx ,cz = cz ,angle = newangle, wait = false, rev = self.direction, crossing = false}
 	self.direction = not self.direction
   	self.tmr = 1
   	self.recordnumber = self.recordnumber + 1
   	courseplay:addsign(self, cx, cy,cz)
 end
+
 -- starts course recording -- just setting variables
 function courseplay:start_record(self)
     courseplay:reset_course(self)
@@ -96,12 +120,15 @@ function courseplay:start_record(self)
 	self.drive  = false
 
 	self.recordnumber = 1
+	self.waitPoints = 0
+	self.crossPoints = 0
 	self.tmr = 101
 	self.direction = false
 end		
 
 -- stops course recording -- just setting variables
 function courseplay:stop_record(self)
+	courseplay:set_crossing(self)
 	self.record = false
 	self.record_pause = false
 	self.drive  = false	
@@ -117,7 +144,7 @@ function courseplay:interrupt_record(self)
 	if self.recordnumber > 3 then
 		self.record_pause = true
 		self.record = false
-
+        courseplay:sign_visibility(self, false)
 		self.dcheck = true
 		-- Show last 2 waypoints, in order to find position for continue
 		local cx ,cz = self.Waypoints[self.recordnumber - 1].cx, self.Waypoints[self.recordnumber - 1].cz
@@ -133,13 +160,34 @@ function courseplay:continue_record(self)
 	self.record = true
 
 	self.dcheck = false
+	courseplay:sign_visibility(self, false)
+	self.signs = {}
+	for k,wp in pairs(self.Waypoints) do
+  	  if k <= 3 or wp.wait == true then
+  		courseplay:addsign(self, wp.cx, 0, wp.cz)
+  	  end
+   	end
 end	
 
 -- delete last waypoint
 function courseplay:delete_waypoint(self)
-	if self.recordnumber > 4 then
+	if self.recordnumber > 3 then
 		self.recordnumber = self.recordnumber - 1
 		self.tmr = 1
+		--table.remove(self.signs,table.getn(self.signs))
+		courseplay:sign_visibility(self, false)
+		self.signs = {}
+		for k,wp in pairs(self.Waypoints) do
+  	  		if k <= 3 or wp.wait == true then
+  				courseplay:addsign(self, wp.cx, 0, wp.cz)
+  	 		end
+   		end
+		if 	self.Waypoints[self.recordnumber].wait then
+				self.waitPoints = self.waitPoints - 1
+		end
+		if 	self.Waypoints[self.recordnumber].crossing then
+				self.crossPoints = self.crossPoints - 1
+		end		
 		self.Waypoints[self.recordnumber] = nil
 		-- Show last 2 waypoints, in order to find position for continue
 		local cx ,cz = self.Waypoints[self.recordnumber - 1].cx, self.Waypoints[self.recordnumber - 1].cz
@@ -158,7 +206,7 @@ function courseplay:reset_course(self)
 	end
 	self.next_targets = {}
 	self.current_course_name = nil
-	self.ai_mode = 1
+--self.ai_mode = 1
 	self.ai_state = 1
 	self.tmr = 1
 	self.Waypoints = {}
@@ -167,4 +215,6 @@ function courseplay:reset_course(self)
 	self.play = false
 	self.back = false
 	self.abortWork = nil
+	self.waitPoints =  0
+	self.crossPoints = 0
 end	

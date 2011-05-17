@@ -3,7 +3,14 @@ function courseplay.prerequisitesPresent(specializations)
 end
 
 
+
 function courseplay:load(xmlFile)
+	-- global array for courses, no refreshing needed any more
+	if courseplay_courses == nil then
+  	  courseplay_courses = {}
+  	  courseplay:load_courses(self)
+	end
+
 	self.locales = {}
 	local aNameSearch = {"vehicle.name." .. g_languageShort, "vehicle.name.en", "vehicle.name", "vehicle#type"};
 	
@@ -103,11 +110,13 @@ function courseplay:load(xmlFile)
 	self.locales.CourseWaitpointStart = g_i18n:getText("CourseWaitpointStart")
 	self.locales.CoursePlayStop = g_i18n:getText("CoursePlayStop")
 	self.locales.NoWaitforfill = g_i18n:getText("NoWaitforfill")
+	self.locales.NoWaitforfillAt = g_i18n:getText("NoWaitforfillAt")
 	self.locales.PointRecordStart = g_i18n:getText("PointRecordStart")
 	self.locales.CourseLoad = g_i18n:getText("CourseLoad")
 	self.locales.ModusSet = g_i18n:getText("ModusSet")
 	self.locales.PointRecordStop = g_i18n:getText("PointRecordStop")
 	self.locales.CourseWaitpointSet = g_i18n:getText("CourseWaitpointSet")
+	self.locales.CourseCrossingSet = g_i18n:getText("CourseCrossingSet")
 	self.locales.PointRecordInterrupt = g_i18n:getText("PointRecordInterrupt")
 	self.locales.PointRecordContinue = g_i18n:getText("PointRecordContinue")
 	self.locales.PointRecordDelete = g_i18n:getText("PointRecordDelete")	
@@ -122,10 +131,21 @@ function courseplay:load(xmlFile)
 	self.locales.CPFuelWarning = g_i18n:getText("CPFuelWarning")
     self.locales.CPNoFuelStop = g_i18n:getText("CPNoFuelStop")
 	self.locales.CPWrongTrailer = g_i18n:getText("CPWrongTrailer")
-    self.locales.CPNoWorkArea = g_i18n:getText("CPNoWorkArea")
+    self.locales.CoursePlayCallPlayer = g_i18n:getText("CoursePlayCallPlayer")
+    self.locales.CoursePlayCalledPlayer = g_i18n:getText("CoursePlayCalledPlayer")
+    self.locales.CoursePlayPlayer = g_i18n:getText("CoursePlayPlayer")
+    self.locales.CoursePlayPlayerStart = g_i18n:getText("CoursePlayPlayerStart")
+    self.locales.CoursePlayPlayerStop = g_i18n:getText("CoursePlayPlayerStop")
+    self.locales.CoursePlayPlayerSwitchSide = g_i18n:getText("CoursePlayPlayerSwitchSide")
+    self.locales.CoursePlayPlayerSendHome = g_i18n:getText("CoursePlayPlayerSendHome")
+    self.locales.CPCombineMangament = g_i18n:getText("CPCombineMangament")
+    self.locales.CPSettings = g_i18n:getText("CPSettings")
+    self.locales.CPWpOffsetX = g_i18n:getText("CPWpOffsetX")
+    self.locales.CPWpOffsetZ = g_i18n:getText("CPWpOffsetZ")
+	self.locales.CPWaterDrive = g_i18n:getText("CPWaterDrive")
+	self.locales.WaitPoints = g_i18n:getText("WaitPoints")
+	self.locales.CrossPoints = g_i18n:getText("CrossPoints")
 
-	
-	
 	self.lastGui = nil
 	self.currentGui = nil
 	self.input_gui = "emptyGui";	
@@ -136,14 +156,18 @@ function courseplay:load(xmlFile)
 	self.timer = 0
 	self.drive_slow_timer = 0
 	self.courseplay_position = nil
+	self.waitPoints = 0
+	self.crossPoints = 0
+	
+	-- saves the shortest distance to the next waypoint (for recocnizing circling)
+	self.shortest_dist = nil
 	
 	-- clickable buttons
 	self.buttons = {}
 	
 	-- waypoints are stored in here
 	self.Waypoints = {}
-	-- loaded/saved courses saved in here
-	self.courses = {}
+	
 	-- TODO still needed?
 	self.play = false
 	-- total number of course players
@@ -233,6 +257,7 @@ self.pFactor = 3000;
 	self.unloaded = false	
 	self.loaded  = false
 	self.unloading_tipper = nil
+	self.last_fill_level = nil
 	
 	-- for user input like saving
 	self.user_input_active = false
@@ -256,12 +281,15 @@ self.pFactor = 3000;
 	
 	self.allow_following = false
 	self.required_fill_level_for_follow = 50
+	self.required_fill_level_for_drive_on = 90
 	
 	self.turn_factor = nil
 	self.turn_radius = 17
 	
+	self.WpOffsetX = 0
+	self.WpOffsetZ = 0
 	-- loading saved courses from xml
-	courseplay:load_courses(self)
+	
 	
 	
 	self.mouse_enabled = false	
@@ -274,8 +302,20 @@ self.pFactor = 3000;
 	
 	self.infoPanelPath = Utils.getFilename("../aacourseplay/img/hud_bg.png", self.baseDirectory);
 	self.hudInfoBaseOverlay = Overlay:new("hudInfoBaseOverlay", self.infoPanelPath, self.hudInfoBasePosX, self.hudInfoBasePosY, self.hudInfoBaseWidth, self.hudInfoBaseHeight);
-	self.showHudInfoBase = 1;
-	self.hudpage = {}
+	
+	self.min_hud_page = 1
+	if courseplay:is_a_combine(self) then
+	  self.min_hud_page = 0
+	end
+	
+	self.showHudInfoBase = self.min_hud_page;
+	
+	self.hudpage = {}	
+	self.hudpage[0]  = {}
+	self.hudpage[0][1]  = {}
+	self.hudpage[0][2]  = {}
+	self.hudpage[0][3]  = {}
+	self.hudpage[0][4]  = {}
 	self.hudpage[1]  = {}
     self.hudpage[1][1]  = {}
     self.hudpage[1][2]  = {}
@@ -291,6 +331,9 @@ self.pFactor = 3000;
     self.hudpage[5] = {}
     self.hudpage[5][1]  = {}
     self.hudpage[5][2]  = {}
+    self.hudpage[6] = {}
+	self.hudpage[6][1]  = {}
+    self.hudpage[6][2]  = {}
     self.hudinfo = {}
     
     self.show_hud = false
@@ -307,14 +350,22 @@ self.pFactor = 3000;
     
     courseplay:register_button(self, nil, "disk_blue.png", "save_course", 1, self.hudInfoBasePosX + 0.280, self.hudInfoBasePosY + 0.050, 0.016, 0.016)
     
+    courseplay:register_button(self, 0, "blank.png", "row1", nil, self.hudInfoBasePosX-0.05, self.hudInfoBasePosY + 0.207, 0.32, 0.015)
+    courseplay:register_button(self, 0, "blank.png", "row2", nil, self.hudInfoBasePosX-0.05, self.hudInfoBasePosY + 0.185, 0.32, 0.015)
+    courseplay:register_button(self, 0, "blank.png", "row3", nil, self.hudInfoBasePosX-0.05, self.hudInfoBasePosY + 0.164, 0.32, 0.015)
+    courseplay:register_button(self, 0, "blank.png", "row4", nil, self.hudInfoBasePosX-0.05, self.hudInfoBasePosY + 0.143, 0.32, 0.015)
+    
     courseplay:register_button(self, 1, "blank.png", "row1", nil, self.hudInfoBasePosX-0.05, self.hudInfoBasePosY + 0.207, 0.32, 0.015)
     courseplay:register_button(self, 1, "blank.png", "row2", nil, self.hudInfoBasePosX-0.05, self.hudInfoBasePosY + 0.185, 0.32, 0.015)
     courseplay:register_button(self, 1, "blank.png", "row3", nil, self.hudInfoBasePosX-0.05, self.hudInfoBasePosY + 0.164, 0.32, 0.015)
+    courseplay:register_button(self, 1, "blank.png", "row4", nil, self.hudInfoBasePosX-0.05, self.hudInfoBasePosY + 0.143, 0.32, 0.015)
     
     courseplay:register_button(self, 2, "blank.png", "row1", nil, self.hudInfoBasePosX-0.05, self.hudInfoBasePosY + 0.207, 0.32, 0.015)
     courseplay:register_button(self, 2, "blank.png", "row2", nil, self.hudInfoBasePosX-0.05, self.hudInfoBasePosY + 0.185, 0.32, 0.015)
     courseplay:register_button(self, 2, "blank.png", "row3", nil, self.hudInfoBasePosX-0.05, self.hudInfoBasePosY + 0.164, 0.32, 0.015)
     
+    
+    -- courseplay:register_button(self, 2, "refresh.png",   "refresh_courses", nil, self.hudInfoBasePosX + 0.247, self.hudInfoBasePosY +0.235, 0.020, 0.020)
     courseplay:register_button(self, 2, "navigate_up.png",   "change_selected_course", -5, self.hudInfoBasePosX + 0.285, self.hudInfoBasePosY +0.222, 0.020, 0.020)
     courseplay:register_button(self, 2, "navigate_down.png", "change_selected_course", 5, self.hudInfoBasePosX + 0.285, self.hudInfoBasePosY +0.120, 0.020, 0.020)
     
@@ -336,6 +387,9 @@ self.pFactor = 3000;
     courseplay:register_button(self, 3, "navigate_minus.png", "change_tipper_offset", -0.5, self.hudInfoBasePosX + 0.285, self.hudInfoBasePosY + 0.146, 0.010, 0.010)
     courseplay:register_button(self, 3, "navigate_plus.png", "change_tipper_offset", 0.5, self.hudInfoBasePosX + 0.300, self.hudInfoBasePosY +0.146, 0.010, 0.010)
     
+    courseplay:register_button(self, 3, "navigate_minus.png", "change_required_fill_level_for_drive_on", -5, self.hudInfoBasePosX + 0.285, self.hudInfoBasePosY + 0.123, 0.010, 0.010)
+    courseplay:register_button(self, 3, "navigate_plus.png", "change_required_fill_level_for_drive_on", 5, self.hudInfoBasePosX + 0.300, self.hudInfoBasePosY +0.123, 0.010, 0.010)
+    
     courseplay:register_button(self, 4, "navigate_up.png", "switch_combine", -1, self.hudInfoBasePosX + 0.285, self.hudInfoBasePosY +0.210, 0.010, 0.010)
     courseplay:register_button(self, 4, "navigate_down.png", "switch_combine", 1, self.hudInfoBasePosX + 0.300, self.hudInfoBasePosY +0.210, 0.010, 0.010)
 	
@@ -353,7 +407,12 @@ self.pFactor = 3000;
     courseplay:register_button(self, 5, "navigate_minus.png", "change_max_speed", -1, self.hudInfoBasePosX + 0.285, self.hudInfoBasePosY +0.167, 0.010, 0.010)
     courseplay:register_button(self, 5, "navigate_plus.png", "change_max_speed", 1, self.hudInfoBasePosX + 0.300, self.hudInfoBasePosY +0.167, 0.010, 0.010)
     
+    courseplay:register_button(self, 6, "navigate_minus.png", "changeWpOffsetX", -0.5, self.hudInfoBasePosX + 0.285, self.hudInfoBasePosY + 0.210, 0.010, 0.010)
+    courseplay:register_button(self, 6, "navigate_plus.png", "changeWpOffsetX", 0.5, self.hudInfoBasePosX + 0.300, self.hudInfoBasePosY +0.210, 0.010, 0.010)
     
+    courseplay:register_button(self, 6, "navigate_minus.png", "changeWpOffsetZ", -0.5, self.hudInfoBasePosX + 0.285, self.hudInfoBasePosY + 0.188, 0.010, 0.010)
+    courseplay:register_button(self, 6, "navigate_plus.png", "changeWpOffsetZ", 0.5, self.hudInfoBasePosX + 0.300, self.hudInfoBasePosY +0.188, 0.010, 0.010)
+
     self.fold_move_direction = 1
 end	
 

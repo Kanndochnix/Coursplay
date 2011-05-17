@@ -25,11 +25,23 @@ function courseplay:drive(self, dt)
     -- this should never happen
     self.recordnumber = self.maxnumber
   end
-  cx ,cz = self.Waypoints[self.recordnumber].cx, self.Waypoints[self.recordnumber].cz
-  -- distance to waypoint
+  cx ,cz, angle = self.Waypoints[self.recordnumber].cx, self.Waypoints[self.recordnumber].cz, self.Waypoints[self.recordnumber].angle
+  
+  -- TODO angle ist  nicht wirklich brauchbar, also neu berechnen
+  
+  -- offset - endlich lohnt sich der mathe-lk von vor 1000 Jahren ;)
+  if self.WpOffsetZ ~= nil and self.WpOffsetZ ~= 0 then
+  	if angle < 0 then
+  	  angle = 360 - angle * -1
+  	end
+    cz  = math.sin(angle) * self.WpOffsetZ + cz
+    cx  = math.cos(angle) * self.WpOffsetZ + cx
+    
+  end
+
   
   self.dist = courseplay:distance(cx ,cz ,ctx ,ctz)
- 
+  --print(string.format("Tx: %f2 Tz: %f2 WPcx: %f2 WPcz: %f2 dist: %f2 ", ctx, ctz, cx, cz, self.dist ))
   -- what about our tippers?
   local tipper_fill_level, tipper_capacity = self:getAttachedTrailersFillLevelAndCapacity()
   local fill_level = nil
@@ -61,9 +73,23 @@ function courseplay:drive(self, dt)
 	if self.Waypoints[last_recordnumber].wait and self.wait then
 		if self.ai_mode == 3 then
 		   	self.global_info_text = courseplay:get_locale(self, "CPReachedOverloadPoint") --'hat Überladepunkt erreicht.'
-		   	if self.tipper_attached and fill_level == 0 then
+		   	if self.tipper_attached then
+		   	
+		   	  -- drive on if fill_level doesn't change and fill level is < 100-self.required_fill_level_for_follow
+		   	  local drive_on = false		   	  
+		   	  if self.timeout < self.timer or self.last_fill_level == nil then
+		   	    if self.last_fill_level ~= nil and fill_level == self.last_fill_level and fill_level < 100-self.required_fill_level_for_follow then
+		   	      drive_on = true
+		   	    end
+		   	    self.last_fill_level = fill_level
+		   	    courseplay:set_timeout(self, 400)
+		   	  end
+		   	
+		   	  if fill_level == 0 or drive_on then
 		   		self.wait = false
+		   		self.last_fill_level = nil
 		   		self.unloaded = true
+		   	  end
 			end
 		elseif self.ai_mode == 4 then
 			if last_recordnumber == self.startWork and fill_level ~= 0 then
@@ -141,6 +167,11 @@ function courseplay:drive(self, dt)
 		elseif self.fuelFillLevel < 25 then
 		    allowedToDrive = false
 		    self.global_info_text = self.locales.CPNoFuelStop
+ 		end
+ 		
+ 		if self.showWaterWarning then
+		    allowedToDrive = false
+		    self.global_info_text = self.locales.CPWaterDrive
  		end
   	end
   
@@ -230,6 +261,7 @@ function courseplay:drive(self, dt)
 	local fwd = nil
 	local distToChange = nil
 	local lx, lz = AIVehicleUtil.getDriveDirection(self.rootNode,cx,cty,cz);
+
 	if self.Waypoints[self.recordnumber].rev then
 		lz = lz * -1
 		lx = lx * -1
@@ -237,6 +269,7 @@ function courseplay:drive(self, dt)
 	else
 		fwd = true
 	end
+	
 	-- go, go, go!
 	if self.recordnumber + 1 <= self.maxnumber then
 	local beforeReverse = (self.Waypoints[self.recordnumber+1].rev and not self.Waypoints[last_recordnumber].rev)
@@ -252,10 +285,28 @@ function courseplay:drive(self, dt)
 		distToChange = 5
 	end
 	
+	
+	
+	-- record shortest distance to the next waypoint
+	if self.shortest_dist == nil or self.shortest_dist > self.dist then
+	  self.shortest_dist = self.dist
+	end
+	
+	if beforeReverse then
+		self.shortest_dist = nil
+	end
+	
+	-- if distance grows i must be circling	
+	if self.dist > self.shortest_dist and self.recordnumber > 3 and self.dist < 15 then
+	  distToChange = self.dist + 1
+	end
+	
 	if self.dist > distToChange then
-	  AIVehicleUtil.driveInDirection(self, dt, 30, 0.5, 0.5, 8, true, fwd, lx, lz , self.sl, 0.5);
+	  AIVehicleUtil.driveInDirection(self, dt, 30, 0.5, 0.5, 8, true, fwd, lx, lz, self.sl, 0.5);
 	  courseplay:set_traffc_collision(self, lx, lz)
   	else	     
+  		-- reset distance to waypoint
+  		self.shortest_dist = nil
 		if self.recordnumber < self.maxnumber  then
 		  if not self.wait then
 		    self.wait = true

@@ -6,7 +6,7 @@ function courseplay:mouseEvent(posX, posY, isDown, isUp, button)
     else
       self.mouse_enabled = true	    
       if not self.show_hud then
-        self.showHudInfoBase = 1
+        self.showHudInfoBase = self.min_hud_page
         self.show_hud = true
       end
     end
@@ -54,6 +54,10 @@ function courseplay:mouseEvent(posX, posY, isDown, isUp, button)
             courseplay:change_required_fill_level(self, button.parameter)
           end
           
+          if func == "change_required_fill_level_for_drive_on" then
+            courseplay:change_required_fill_level_for_drive_on(self, button.parameter)
+          end
+          
           if func == "change_turn_speed" then
             courseplay:change_turn_speed(self, button.parameter)
           end
@@ -78,10 +82,23 @@ function courseplay:mouseEvent(posX, posY, isDown, isUp, button)
             courseplay:change_selected_course(self, button.parameter)
           end
           
+          if func == "refresh_courses" then
+            courseplay:load_courses(self, button.parameter)
+          end
+          
           if func == "switch_combine" then
             courseplay:switch_combine(self, button.parameter)
           end
           
+          if func == "changeWpOffsetX" then
+            courseplay:changeCPWpOffsetX(self, button.parameter)
+          end
+          
+          if func == "changeWpOffsetZ" then
+            courseplay:changeCPWpOffsetZ(self, button.parameter)
+          end
+          
+
           if func == "close_hud" then
             self.mouse_enabled = false
             self.show_hud = false
@@ -89,7 +106,26 @@ function courseplay:mouseEvent(posX, posY, isDown, isUp, button)
           end
           
           
-          if func == "row1" or func == "row2" or func == "row3" then
+          if func == "row1" or func == "row2" or func == "row3" or func == "row4" then
+            if self.showHudInfoBase == 0 then
+              if self.courseplayers == nil or table.getn(self.courseplayers) == 0 then
+                if func == "row1" then
+                  courseplay:call_player(self)
+                end
+              else
+                if func == "row2" then
+                  courseplay:start_stop_player(self)
+                end
+                
+                if func == "row3" then
+                  courseplay:send_player_home(self)
+                end
+                
+                if func == "row4" then
+                  courseplay:switch_player_side(self)
+                end
+              end
+            end
             if self.showHudInfoBase == 1 then
 	            if self.play then
 	              if not self.drive then
@@ -139,14 +175,20 @@ function courseplay:mouseEvent(posX, posY, isDown, isUp, button)
 	                end
 	                
 					if not self.record_pause then
-					  if func == "row2" and self.recordnumber > 3 then
+					  if func == "row2" then  --and self.recordnumber > 3
 						courseplay:set_waitpoint(self)
 					  end
-					  if func == "row3" and self.recordnumber > 3 then
+					  
+					  if func == "row4" then  --and self.recordnumber > 3
+					   courseplay:set_crossing(self)
+					  end
+					  
+					  if func == "row3" then  --and self.recordnumber > 3 
 						courseplay:interrupt_record(self)
 					  end
+					  
 					else
-					  if func == "row2" and self.recordnumber > 4 then
+					  if func == "row2" then  --and self.recordnumber > 4 
 					    courseplay:delete_waypoint(self)
 					  end
 					  if func == "row3" then
@@ -203,7 +245,11 @@ function courseplay:handle_user_input(self)
 		self.user_input_active = false
 		self.current_course_name = self.user_input
 		course = {name =self.current_course_name, waypoints = self.Waypoints}
-		table.insert(self.courses, course)
+  		if courseplay_courses == nil then
+  	  		courseplay_courses = {}
+		end
+		table.insert(courseplay_courses, course)
+		
 		self.user_input = ""	   
 		self.user_input_message = nil
 		self.steeringEnabled = true   --test

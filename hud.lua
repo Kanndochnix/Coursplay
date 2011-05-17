@@ -20,11 +20,38 @@ function courseplay:HudPage(self)
 end
 
 function courseplay:loadHud(self)
-  self.hudpage[1][1] = {}
+	self.hudpage[0][1] = {}
+	self.hudpage[0][2] = {}
+	self.hudpage[0][3] = {}
+	self.hudpage[0][4] = {}
+    self.hudpage[1][1] = {}
     self.hudpage[1][2] = {}
     if self.show_hud then
       self.hudInfoBaseOverlay:render();
-	  if self.showHudInfoBase <= 1 then
+	  if self.showHudInfoBase == 0 then
+	    -- no courseplayer!
+	    if self.courseplayers == nil or table.getn(self.courseplayers) == 0 then
+	      if self.wants_courseplayer then
+	        self.hudpage[0][1][1]= courseplay:get_locale(self, "CoursePlayCalledPlayer")
+	      else
+	        self.hudpage[0][1][1]= courseplay:get_locale(self, "CoursePlayCallPlayer")
+	      end
+	    else
+	      self.hudpage[0][1][1]= courseplay:get_locale(self, "CoursePlayPlayer")
+	      local tractor = self.courseplayers[1] 
+	      self.hudpage[0][2][1] = tractor.name
+	      
+	      if tractor.forced_to_stop then
+	    	self.hudpage[0][1][2]= courseplay:get_locale(self, "CoursePlayPlayerStart")	          
+	      else
+	        self.hudpage[0][1][2]= courseplay:get_locale(self, "CoursePlayPlayerStop")
+	      end   
+          self.hudpage[0][1][3]= courseplay:get_locale(self, "CoursePlayPlayerSendHome")
+          if self.grainTankCapacity == 0 then
+            self.hudpage[0][1][4]= courseplay:get_locale(self, "CoursePlayPlayerSwitchSide")
+          end
+	    end
+	  elseif self.showHudInfoBase == 1 then
         if self.play then
 			if not self.drive then
 			    self.hudpage[1][1][3]= courseplay:get_locale(self, "CourseReset")
@@ -76,7 +103,7 @@ function courseplay:loadHud(self)
 				end
 				
 				if not self.record_pause then	
-					if self.recordnumber > 3 then
+					if self.recordnumber > 1 then
 						self.hudpage[1][1][2]= courseplay:get_locale(self, "CourseWaitpointSet")
 						if InputBinding.hasEvent(InputBinding.AHInput2) then
 							courseplay:set_waitpoint(self)
@@ -86,6 +113,8 @@ function courseplay:loadHud(self)
 						if InputBinding.hasEvent(InputBinding.AHInput3) then
 							courseplay:interrupt_record(self)
 						end
+
+						self.hudpage[1][1][4]= courseplay:get_locale(self, "CourseCrossingSet")
 
 						if not self.direction and self.movingDirection == -1 then
 							courseplay:set_direction(self)
@@ -115,11 +144,11 @@ function courseplay:loadHud(self)
 	
 	  elseif self.showHudInfoBase == 2 then
 		local number_of_courses = 0
-		
-		for k,course in pairs(self.courses) do 
-		  number_of_courses = number_of_courses + 1
+		if courseplay_courses ~= nil then
+			for k,course in pairs(courseplay_courses) do 
+			  number_of_courses = number_of_courses + 1
+			end
 		end
-		
 		local start_course_num = self.selected_course_number
 		local end_course_num = start_course_num + 4
 		
@@ -139,7 +168,7 @@ function courseplay:loadHud(self)
 		      button.overlay:render()
 		    end
 		  end		  
-		  local course_name = self.courses[i+1].name
+		  local course_name = courseplay_courses[i+1].name
 		  
 		  if course_name == nil or course_name == "" then
 		    course_name = "-"
@@ -154,6 +183,7 @@ function courseplay:loadHud(self)
 	    self.hudpage[3][1][2]= courseplay:get_locale(self, "CPRequiredFillLevel") --"Start bei%:"
 		self.hudpage[3][1][3]= courseplay:get_locale(self, "CPTurnRadius") --"Wenderadius:"
 		self.hudpage[3][1][4]= courseplay:get_locale(self, "CPPipeOffset") --"Pipe Abstand:"
+		self.hudpage[3][1][5]= courseplay:get_locale(self, "NoWaitforfillAt") --"abfahren bei%:"
 		
 		if self.ai_state ~= nil then
 			self.hudpage[3][2][1]= string.format("%.1f", self.combine_offset)
@@ -177,6 +207,12 @@ function courseplay:loadHud(self)
 		else
 		  self.hudpage[3][2][4]= "---"
 		end	
+		
+		if self.required_fill_level_for_drive_on ~= nil then
+			self.hudpage[3][2][5]= string.format("%.1f", self.required_fill_level_for_drive_on)
+		else
+			self.hudpage[3][2][5]= "---"
+		end
 	  
 	  elseif self.showHudInfoBase == 4 then
 	    
@@ -218,7 +254,29 @@ function courseplay:loadHud(self)
 	    self.hudpage[5][2][1]= string.format("%d", self.turn_speed*3600) .. " km/h"
 	    self.hudpage[5][2][2]= string.format("%d", self.field_speed*3600) .. " km/h"
 	    self.hudpage[5][2][3]= string.format("%d", self.max_speed*3600) .. " km/h"
+
+	  
+	  elseif self.showHudInfoBase == 6 then
+	    self.hudpage[6][1][1]= courseplay:get_locale(self, "CPWpOffsetX") -- X-Offset
+	    self.hudpage[6][1][2]= courseplay:get_locale(self, "CPWpOffsetZ") -- Z-Offset:
+
+
+     	if self.WpOffsetX ~= nil then
+		  self.hudpage[6][2][1]= string.format("%.1f", self.WpOffsetX) .. "m"
+		else
+		  self.hudpage[6][2][1]= "---"
+		end
+		
+		if self.WpOffsetZ ~= nil then
+		  self.hudpage[6][2][2]= string.format("%.1f", self.WpOffsetZ) .. "m"
+		else
+		  self.hudpage[6][2][2]= "---"
+		end
+
 	  end
+	  
+	  
+
 	end-- end if show_hud
 end
 
@@ -253,8 +311,10 @@ function courseplay:showHud(self)
 		end
 		
 		if self.Waypoints[self.recordnumber ] ~= nil then
-		    self.hudinfo[3]= courseplay:get_locale(self, "CPWaypoint") ..self.recordnumber .." / "..self.maxnumber
-		else
+		    self.hudinfo[3]= courseplay:get_locale(self, "CPWaypoint") ..self.recordnumber .." / "..self.maxnumber .."    ".. self.locales.WaitPoints.. self.waitPoints.."    "..self.locales.CrossPoints .. self.crossPoints
+		elseif self.record or self.record_pause then
+			 self.hudinfo[3]= courseplay:get_locale(self, "CPWaypoint") ..self.recordnumber .."    ".. self.locales.WaitPoints .. self.waitPoints  .."    ".. self.locales.CrossPoints .. self.crossPoints
+		else  
 			self.hudinfo[3]=  courseplay:get_locale(self, "CPNoWaypoint") -- "Keine Wegpunkte geladen"
 		end
 		setTextBold(false)
@@ -269,7 +329,9 @@ function courseplay:showHud(self)
 		setTextBold(true)
 		local hud_headline = nil
 		
-		if self.showHudInfoBase == 1 then
+		if self.showHudInfoBase == 0 then
+		  hud_headline= courseplay:get_locale(self, "CPCombineMangament") -- "Kurse verwalten"
+		elseif self.showHudInfoBase == 1 then
 		  hud_headline= courseplay:get_locale(self, "CPSteering") -- "Abfahrhelfer Steuerung"
 		elseif self.showHudInfoBase == 2 then
 	      hud_headline= courseplay:get_locale(self, "CPManageCourses") -- "Kurse verwalten"
@@ -279,6 +341,8 @@ function courseplay:showHud(self)
 		  hud_headline= courseplay:get_locale(self, "CPManageCombines") -- "Drescher verwalten";
 		elseif self.showHudInfoBase == 5 then
 		  hud_headline= courseplay:get_locale(self, "CPSpeedLimit") -- "Geschwindigkeiten"
+		elseif self.showHudInfoBase == 6 then
+		  hud_headline= courseplay:get_locale(self, "CPSettings") -- "Allgemein"
 		end
 		
 	    renderText(self.hudInfoBasePosX + 0.060, self.hudInfoBasePosY + 0.240, 0.021, hud_headline);
