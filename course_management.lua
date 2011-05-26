@@ -12,12 +12,69 @@ function courseplay:input_course_name(self)
  end
 end
 
-function courseplay:load_course(self, id)
-  if id ~= nil then
-    id = self.selected_course_number + id
+function courseplay:reload_courses(self, use_real_id)
+  for k,v in pairs(self.loaded_courses) do
+ 
+      courseplay:load_course(self, v, use_real_id)
+  end
+end
+
+function courseplay:add_course(self, id, use_real_id)
+  courseplay:load_course(self, id, use_real_id, true)  
+end
+
+
+function courseplay:load_course(self, id, use_real_id, add_course_at_end)
+	-- global array for courses, no refreshing needed any more	
+
+  if courseplay_courses == nil then
+    if self.courseplay_courses ~= nil then
+      courseplay_courses = self.courseplay_courses
+    else
+      print("courseplay_courses is empty")
+      return    
+    end
+  end
+
+  if id ~= nil and id ~= "" then
+    local searchID = id * 1
+	if not use_real_id then      
+      id = self.selected_course_number + id
+    else
+		for i=1, table.getn(courseplay_courses) do
+			if courseplay_courses[i].id ~= nil then
+				if courseplay_courses[i].id == searchID then
+            		id = i
+            		break
+       	 		end
+			end
+    	end
+
+  	end
+    id = id * 1 -- ?? Why ??
+    
+    -- negative values mean that add_course_end is true
+    if id < 1 then
+      id = id * -1
+      add_course_at_end = true
+    end
+    
+    
+    
+    
+    
   	local course = courseplay_courses[id]
   	if course == nil then
+  	  print("no course found")
   	  return
+  	end
+  	if not use_real_id then
+
+  	  if add_course_at_end == true then
+  	  	table.insert(self.loaded_courses, courseplay_courses[id].id*-1)
+  	  else
+  	    table.insert(self.loaded_courses, courseplay_courses[id].id)
+  	  end
   	end
   --	courseplay:reset_course(self)
   	if table.getn(self.Waypoints) == 0 then
@@ -31,22 +88,35 @@ function courseplay:load_course(self, id)
 		local new_wp = 1
 		-- go through all waypoints and try to find a waypoint of the next course near a crossing
 		
-		for number, course1_wp in pairs(course1_waypoints) do
-		  if course1_wp.crossing  == true then
-		  	for number_2, course2_wp in pairs(course2_waypoints) do
-		  	  if course2_wp.crossing == true then  
-		        if courseplay:distance(course1_wp.cx, course1_wp.cz, course2_wp.cx, course2_wp.cz) < 30 then
-		           if number > 3 and number ~= number_2 and not wp_found and course1_waypoints[number].merged == nil then
-		             lastWP = number
-		             new_wp = number_2
-		             wp_found = true
-		             print(number)
-		             print(number_2)
-		           end
-		        end
-		      end
-		    end
-		  end
+		if add_course_at_end ~= true then
+			for number, course1_wp in pairs(course1_waypoints) do
+			  if course1_wp.crossing == true and course1_wp.merged == nil and wp_found == false then
+			  	for number_2, course2_wp in pairs(course2_waypoints) do
+			  	  if course2_wp.crossing == true then
+			  	  	local distance_between_waypoints = courseplay:distance(course1_wp.cx, course1_wp.cz, course2_wp.cx, course2_wp.cz)
+			  	  	--print("--------------")
+			  	  	--print(number_2)
+			  	  	--print(distance_between_waypoints)
+			  	  	--print("--------------")  
+			        if distance_between_waypoints < 50 then
+			           if number > 3 and number ~= number_2 then
+			             lastWP = number
+			             new_wp = number_2
+			             --print("found wp")
+			             --print(last_wp)
+			             --print(new_wp)
+			             --print("--------------")
+			             wp_found = true
+			           end
+			        end
+			      end
+			    end
+			  end
+			end
+		end
+		
+		if wp_found == false then
+		  print("no waypoint found")
 		end
 		
 		course1_waypoints[lastWP].merged = true
@@ -66,17 +136,30 @@ function courseplay:load_course(self, id)
   	end
 	self.play = true
 	self.recordnumber = 1
+	self.waitPoints = 0
+	self.crossPoints = 0
 	self.maxnumber = table.getn(self.Waypoints)
 	-- this adds the signs to the course
 	for k,wp in pairs(self.Waypoints) do
   		if k <= 3 or wp.wait == true  or wp.crossing == true then
-  		courseplay:addsign(self, wp.cx, 0, wp.cz)
+	  		if k == 1 then
+	  		  courseplay:addsign(self, wp.cx, wp.angle, wp.cz, self.start_sign, true)
+	  		elseif wp.crossing then
+	  		  courseplay:addsign(self, wp.cx, wp.angle, wp.cz, self.cross_sign, true)
+	  		elseif wp.wait then
+	  		  courseplay:addsign(self, wp.cx, wp.angle, wp.cz, self.wait_sign)	  		
+	  		else
+	  		  courseplay:addsign(self, wp.cx, wp.angle, wp.cz)
+	  		end	  		
+  	  	end
+  	  	if k == self.maxnumber then
+  	  	  courseplay:addsign(self, wp.cx, wp.angle, wp.cz, self.stop_sign)
   	  	end
   	  	if wp.wait then
-		self.waitPoints = self.waitPoints + 1
+		  self.waitPoints = self.waitPoints + 1
 		end
 		if wp.crossing then
-		self.crossPoints = self.crossPoints + 1
+		  self.crossPoints = self.crossPoints + 1
 		end
     end
   end
@@ -104,8 +187,9 @@ function courseplay:save_courses(self)
     for _,course in pairs(courseplay_courses) do
       if course ~= nil then
 	      local name = course.name
+	      local id = course.id
 	      local x = course.waypoints
-	      File:write(tab .. "<course name=\"" .. name .. "\">\n")
+	      File:write(tab .. "<course name=\"" .. name .. "\" id=\"" ..id.."\" >\n")
 	      for i = 1, table.getn(x) do
 	        local v = x[i]
 			local wait = 0
@@ -142,11 +226,12 @@ function courseplay:save_courses(self)
 end
 
 
-function courseplay:load_courses(self)
+function courseplay:load_courses()
+    print('loaded courses')
 	local finish_all = false
 	courseplay_coursesUnsort = {}
 	local path = getUserProfileAppPath() .. "savegame" .. g_careerScreen.selectedIndex .. "/"
-    local existDir = io.open (path .. "courseplay.xml")
+    local existDir = io.open (path .. "courseplay.xml", "a")
 	if existDir == nil then
 	 return
 	end
@@ -162,6 +247,10 @@ function courseplay:load_courses(self)
 		if name == nil then
 			finish_all = true
 			break
+		end
+		local id = getXMLInt(File, baseName .. "#id")
+		if id == nil then
+			id = 0
 		end
 		local tempCourse = {}
 	  
@@ -200,7 +289,7 @@ function courseplay:load_courses(self)
 			tempCourse[s] = {cx = x, cz = z, angle = dangle, rev= rev, wait = wait, crossing = crossing}
 			s = s + 1
 		  else
-		    local course = {name= name, waypoints=tempCourse}
+		    local course = {name= name,id= id, waypoints=tempCourse}
         	table.insert(courseplay_coursesUnsort, course)
 			i = i + 1
 			finish_wp = true
@@ -223,14 +312,33 @@ function courseplay:load_courses(self)
 			if courseplay_courses[i] == courseplay_coursesUnsort[k].name then
 				local waypoints = courseplay_coursesUnsort[k].waypoints
 				local name =  courseplay_courses[i]
-				local course = {name= name, waypoints=waypoints}
+				local id = courseplay_coursesUnsort[k].id
+				local course = {name= name, id = id, waypoints=waypoints}
 	            courseplay_courses[i] = course
 	            break
 			end
 		end
     end
+	-- search highest ID
+	local maxID = 0
+    for i=1, table.getn(courseplay_courses) do
+		if courseplay_courses[i].id ~= nil then
+			if courseplay_courses[i].id > maxID then
+            	maxID = courseplay_courses[i].id
+       	 	end
+		end
+    end
+    self.courseID = maxID
+    -- define for old courses
+    for i=1, table.getn(courseplay_courses) do
+        if courseplay_courses[i].id == nil or courseplay_courses[i].id == 0 then
+        	self.courseID = self.courseID + 1
+			courseplay_courses[i].id = self.courseID  
+        end
+    end
     
     courseplay_coursesUnsort = nil
+    return courseplay_courses
 end
 
 

@@ -21,10 +21,9 @@
  	</description>
     	<multiplayer supported="true"/>   
 	<iconFilename>
-		<en>store.png</en>
-		<de>store.png</de>
+		store.png
  	</iconFilename>
-	<version>1.7</version>
+	<version>2.10</version>
     <l10n>
 	<text name="PointRecordStart">
 		<en>Record Course Start</en>
@@ -67,8 +66,23 @@
 	</text>
 
 	<text name="CoursePlayPlayerSwitchSide">
-		<en>switch side</en>
-		<de>Seite wechseln</de>
+		<en>Driver side</en>
+		<de>Abfahrerseite</de>
+	</text>
+	
+	<text name="CoursePlayPlayerSideNone">
+		<en>automatic</en>
+		<de>automatisch</de>
+	</text>
+	
+	<text name="CoursePlayPlayerSideLeft">
+		<en>left</en>
+		<de>links</de>
+	</text>
+	
+	<text name="CoursePlayPlayerSideRight">
+		<en>right</en>
+		<de>rechts</de>
 	</text>
 	
 	<text name="CoursePlayPlayerSendHome">
@@ -518,6 +532,7 @@
 		<sourceFile filename="triggers.lua" />
 		<sourceFile filename="hud.lua" />
 		<sourceFile filename="settings.lua" />
+		<sourceFile filename="courseplay_event.lua" />
     </extraSourceFiles>   
 
 	<inputBindings>

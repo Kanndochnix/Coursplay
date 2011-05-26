@@ -60,7 +60,7 @@ function courseplay:start(self)
 				if wpanz == 1 and self.startWork == nil then
 	                self.startWork = i
 				end
-				if wpanz == 2 and self.stopWork == nil then
+				if wpanz > 1 and self.stopWork == nil then
 	                self.stopWork = i
 				end
 			end
@@ -146,7 +146,7 @@ function courseplay:stop(self)
 	self.startWork = nil
 	self.stopWork = nil
 	
-	
-	AIVehicleUtil.driveInDirection(self, 0, 30, 0, 0, 28, false, moveForwards, 0, 1)	
-
+	if g_server ~= nil then
+	  AIVehicleUtil.driveInDirection(self, 0, self.steering_angle, 0, 0, 28, false, moveForwards, 0, 1)	
+	end
 end

@@ -92,8 +92,10 @@ function courseplay:handle_mode2(self, dt)
     end
   else -- NO active combine
     -- STOP!!
-    AIVehicleUtil.driveInDirection(self, dt, 30, 0, 0, 28, false, moveForwards, 0, 1)
-  
+    if g_server ~= nil then
+      AIVehicleUtil.driveInDirection(self, dt, self.steering_angle, 0, 0, 28, false, moveForwards, 0, 1)
+    end
+    
   	if self.loaded then
   	  self.recordnumber = 2
   	  self.ai_state = 1
@@ -673,8 +675,10 @@ function courseplay:unload_combine(self, dt)
 	
   if not allowedToDrive then
 	local lx, lz = 0, 1
-	self.motor:setSpeedLevel(0, false);
-	AIVehicleUtil.driveInDirection(self, dt, 30, 0, 0, 28, false, moveForwards, lx, lz)
+	if g_server ~= nil then
+	  self.motor:setSpeedLevel(0, false);
+	  AIVehicleUtil.driveInDirection(self, dt, self.steering_angle, 0, 0, 28, false, moveForwards, lx, lz)
+	end
     return 
   end  
   
@@ -725,11 +729,11 @@ function courseplay:unload_combine(self, dt)
 
     ]]
 	-- C.Schoch
-	
-	self.motor.maxRpm[self.sl] = maxRpm;
   
-  AIVehicleUtil.driveInDirection(self, dt, 45, 1, 0.8, 25, true, true, target_x, target_z, self.sl, 0.9)
-  
+  self.motor.maxRpm[self.sl] = maxRpm
+  if g_server ~= nil then
+    AIVehicleUtil.driveInDirection(self, dt, 45, 1, 0.8, 25, true, true, target_x, target_z, self.sl, 0.9)
+  end
   if colX == nil then  
   	courseplay:set_traffc_collision(self, target_x, target_z)
   else
@@ -850,7 +854,9 @@ function courseplay:follow_tractor(self, dt, tractor)
   
   if not allowedToDrive then
    local lx, lz = 0, 1
-   AIVehicleUtil.driveInDirection(self, dt, 30, 0, 0, 28, false, moveForwards, lx, lz)
+   if g_server ~= nil then
+     AIVehicleUtil.driveInDirection(self, dt, self.steering_angle, 0, 0, 28, false, moveForwards, lx, lz)
+   end
    return 
   end  
   
@@ -874,8 +880,9 @@ function courseplay:follow_tractor(self, dt, tractor)
   local target_x, target_z = AIVehicleUtil.getDriveDirection(self.aiTractorDirectionNode, cx, y, cz)
   
   self.motor.maxRpm[sl] = maxRpm
-  
-  AIVehicleUtil.driveInDirection(self, dt, 45, 1, 0.8, 25, true, true, target_x, target_z, sl, 0.9)
+  if g_server ~= nil then
+    AIVehicleUtil.driveInDirection(self, dt, 45, 1, 0.8, 25, true, true, target_x, target_z, sl, 0.9)
     
-  courseplay:set_traffc_collision(self, target_x, target_z)  
+    courseplay:set_traffc_collision(self, target_x, target_z)
+  end  
 end

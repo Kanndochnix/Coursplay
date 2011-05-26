@@ -1,17 +1,16 @@
 --
--- Courseplay v1.7
+-- Courseplay v2.10
 -- Specialization for Courseplay
 --
 -- @author  Lautschreier / Hummel / Wolverin0815 / Bastian82
--- @version:	v1.7 15.05.2011
+-- @version:	v2.10 26.05.2011
 -- @testing:    bullgore80
 
 courseplay = {};
-courseplay_path = g_modsDirectory.."/aacourseplay/"
+courseplay_path = g_modsDirectory.."/ZZZ_courseplay/"
 
 -- working tractors saved in this
 working_course_players = {};
-
 
 -- starting & stopping of courseplay
 source(courseplay_path.."start_stop.lua")
@@ -57,3 +56,4 @@ source(courseplay_path.."debug.lua")
 source(courseplay_path.."button.lua")
 source(courseplay_path.."hud.lua")
 source(courseplay_path.."settings.lua")
+source(courseplay_path.."courseplay_event.lua")
