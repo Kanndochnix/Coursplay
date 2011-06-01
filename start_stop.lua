@@ -40,6 +40,7 @@ function courseplay:start(self)
 	-- distance
 	dist = courseplay:distance(ctx ,ctz ,cx ,cz)	
 	if (self.ai_mode ~= 2 and self.ai_state == 1) or (self.ai_mode == 2 and self.loaded) then
+	--if self.ai_state == 1 then
 		local nearestpoint = dist
 		local wpanz = 0
 		-- search nearest Waypoint

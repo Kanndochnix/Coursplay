@@ -1,3 +1,5 @@
+local cp_directory = g_currentModDirectory
+
 function courseplay.prerequisitesPresent(specializations)
 	return true;
 end
@@ -200,7 +202,7 @@ self.pFactor = 3000;
 	self.wait = true
 	self.waitTimer = nil
 	
-	self.cp_directory = getUserProfileAppPath() .. "mods/ZZZ_courseplay/"
+	self.cp_directory = cp_directory
 	
 	-- our arrow is displaying dirction to waypoints
 	self.ArrowPath = Utils.getFilename("img/arrow.png", self.cp_directory);
