@@ -69,7 +69,7 @@ function courseplay:drive(self, dt)
 	end
 	
 	-- length of vector
-	local vl = math.sqrt(vcx * vcx + vcz * vcz)
+	local vl = Utils.vector2Length(vcx, vcz)
 	-- if not too short: normalize and add offsets
 	if vl ~= nil and vl > 0.01 then
 		vcx = vcx / vl
@@ -147,13 +147,13 @@ function courseplay:drive(self, dt)
 			if last_recordnumber == self.stopWork and self.abortWork == nil then
 		    	self.global_info_text = courseplay:get_locale(self, "CPWorkEnd") --'hat Arbeit beendet.'
 			else
-				self.global_info_text = courseplay:get_locale(self, "CPTriggerReached") -- "Abladestelle erreicht"	
+				self.global_info_text = courseplay:get_locale(self, "CPUnloadBale") -- "Ballen werden entladen"	
 				if fill_level == 0 or drive_on then
 					self.wait = false
 				end			
 			end
   		else
-		   	self.global_info_text = courseplay:get_locale(self, "CPReachedWaitPoint") --'hat Wartepunkt erreicht.'
+		   	self.global_info_text = courseplay:get_locale(self, "CPReachedWaitPoint") --'bereit zum entladen.'
 		end
 		
 		
@@ -170,6 +170,8 @@ function courseplay:drive(self, dt)
 		-- combi-mode
 		if (((self.ai_mode == 2 or self.ai_mode == 3) and self.recordnumber < 2) or self.active_combine) and self.tipper_attached then	      
 		  return courseplay:handle_mode2(self, dt)
+		else
+		  self.ai_state = 0
 		end
 		
 		-- Fertilice loading --only for one Implement !
@@ -214,6 +216,12 @@ function courseplay:drive(self, dt)
 		    allowedToDrive = false
 		    self.global_info_text = self.locales.CPWaterDrive
  		end
+
+ 		if self.StopEnd and (self.recordnumber == self.maxnumber or self.currentTipTrigger ~= nil) then
+		    allowedToDrive = false
+		    self.global_info_text = self.locales.CPReachedEndPoint
+ 		end
+
   	end
   
    -- ai_mode 4 = fertilize

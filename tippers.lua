@@ -96,8 +96,10 @@ function courseplay:load_tippers(self)
   local allowedToDrive = false
   local cx ,cz = self.Waypoints[2].cx,self.Waypoints[2].cz
   local tipper_fill_level, tipper_capacity = self:getAttachedTrailersFillLevelAndCapacity()
-  local fill_level = nil
-  if tipper_fill_level ~= nil then
+  if tipper_fill_level == nil then tipper_fill_level = 0 end
+  if tipper_capacity == nil then tipper_capacity = 0 end
+  local fill_level = 0
+  if tipper_capacity ~= 0 then
      fill_level = tipper_fill_level * 100 / tipper_capacity
   end
   
@@ -119,6 +121,7 @@ function courseplay:load_tippers(self)
    		self.last_fill_level = nil
    		self.loaded = true
    		self.lastTrailerToFillDistance = nil
+   		self.currentTrailerToFill = nil
    		return true
    	  end
 
@@ -217,7 +220,7 @@ function courseplay:unload_tippers(self)
 	local trigger = self.currentTipTrigger
 	-- if trigger accepts fruit
 	--print('In Trigger');
-	if (trigger.acceptedFruitTypes ~= nil and trigger.acceptedFruitTypes[active_tipper:getCurrentFruitType()]) or startswith(trigger.className, "MapBGA")  then
+	if (trigger.acceptedFruitTypes ~= nil and trigger.acceptedFruitTypes[active_tipper:getCurrentFruitType()]) or startswith(trigger.className, "MapBGA") or startswith(trigger.className, "TipAny") then
 		allowedToDrive = false
 	else
 		allowedToDrive = true

@@ -27,9 +27,22 @@ end;
 
 -- tip trigger
 function courseplay:findTipTriggerCallback(transformId, x, y, z, distance)
-  for k,trigger in pairs(g_currentMission.onCreateLoadedObjects) do
-	if trigger.className == "SiloTrigger" or trigger.className == "TipTrigger" or startswith(trigger.className, "MapBGA") then
+  local trigger_objects = g_currentMission.onCreateLoadedObjects
+  
+  if  g_currentMission.tipAnywhereTriggers ~= nil then
+    for k,trigger in pairs(g_currentMission.tipAnywhereTriggers) do
+      table.insert(trigger_objects, trigger)
+    end
+  end
+  
+  
+  for k,trigger in pairs(trigger_objects) do
+	if (trigger.className and (trigger.className == "SiloTrigger" or endswith(trigger.className, "TipTrigger") or startswith(trigger.className, "MapBGA")))  or trigger.isTipAnywhereTrigger then
 	    -- transformId
+	    if  not trigger.className then
+	      -- little hack ;)
+	      trigger.className = "TipAnyWhere"
+	    end 
 	    if trigger.triggerId ~= nil and trigger.triggerId == transformId then
 		  self.currentTipTrigger = trigger		
 		elseif trigger.triggerIds ~= nil and transformId ~= nil and table.contains(trigger.triggerIds, transformId) then
@@ -62,4 +75,16 @@ function startswith(sbig, slittle)
     return false
   end
   return string.sub(sbig, 1, string.len(slittle)) == slittle
+end
+
+function endswith(sbig, slittle)
+if type(slittle) == "table" then
+for k,v in ipairs(slittle) do
+if string.sub(sbig, string.len(sbig) - string.len(v) + 1) == v then 
+return true
+end
+end
+return false
+end
+return string.sub(sbig, string.len(sbig) - string.len(slittle) + 1) == slittle
 end

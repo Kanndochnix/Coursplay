@@ -1,5 +1,6 @@
 -- AI-states
--- 1  warte am startpunkt auf arbeit
+-- 0 Default, wenn nicht in Mode2 aktiv
+-- 1 warte am startpunkt auf arbeit
 -- 2 fahre hinter drescher
 -- 3 fahre zur pipe / abtanken
 -- 4 fahre ans heck des dreschers
@@ -15,7 +16,12 @@ function courseplay:handle_mode2(self, dt)
   local allowedToDrive = false
   local tipper_fill_level, tipper_capacity = self:getAttachedTrailersFillLevelAndCapacity()
   
-  local fill_level = tipper_fill_level * 100 / tipper_capacity
+  if tipper_fill_level == nil then tipper_fill_level = 0 end
+  if tipper_capacity == nil then tipper_capacity = 0 end
+  local fill_level = 0
+  if tipper_capacity ~= 0 then
+	fill_level = tipper_fill_level * 100 / tipper_capacity
+  end
   
   if fill_level > self.required_fill_level_for_follow then
     self.allow_following = true
@@ -23,12 +29,16 @@ function courseplay:handle_mode2(self, dt)
     self.allow_following  = false
   end
   
+  if self.ai_state == 0 then
+    self.ai_state = 1
+  end
+  
   if self.ai_state == 1 and self.active_combine ~= nil then
     courseplay:unregister_at_combine(self, self.active_combine)    
   end
     
   -- trailer full
-  if self.ai_state == 8 then     
+  if self.ai_state == 8 or (self.ai_state == 1 and fill_level == 100) then     
   	self.recordnumber = 2
   	courseplay:unregister_at_combine(self, self.active_combine)
   	self.ai_state = 1
@@ -50,7 +60,7 @@ function courseplay:handle_mode2(self, dt)
   
   
   -- switch side
-  if self.active_combine ~= nil and self.ai_state == 10 then
+  if self.active_combine ~= nil and (self.ai_state == 10 or self.active_combine.turnAP ~= nil and self.active_combine.turnAP == true) then
     if self.chopper_offset > 0 then
   		self.target_x, self.target_y, self.target_z = localToWorld(self.active_combine.rootNode, 25, 0, 0)
   	else
