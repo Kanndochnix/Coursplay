@@ -20,6 +20,7 @@ function courseplay:handle_mode4(self,allowedToDrive, workArea, workSpeed,  fill
 		if fill_level == 0 and workArea and self.abortWork == nil then
 			self.abortWork = self.recordnumber
 			self.recordnumber = self.stopWork - 4
+			self.loaded = false;
 		--	print(string.format("Abort: %d StopWork: %d",self.abortWork,self.stopWork))
         end
 

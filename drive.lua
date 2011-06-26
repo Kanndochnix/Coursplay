@@ -178,7 +178,9 @@ function courseplay:drive(self, dt)
 		if self.ai_mode == 4 and self.tipper_attached and self.startWork ~= nil and self.stopWork ~= nil then
 			if self.recordnumber == 2 and fill_level < 100 and not self.loaded then   --or self.loaded
 				allowedToDrive = false
-		    	self.info_text = string.format(courseplay:get_locale(self, "CPloading") ,tipper_fill_level,tipper_capacity )
+				print('filling');
+		    	--self.info_text = string.format(courseplay:get_locale(self, "CPloading") ,tipper_fill_level,tipper_capacity )
+		    	self.global_info_text = string.format(courseplay:get_locale(self, "CPloading") ,tipper_fill_level,tipper_capacity )
 		    	
 				if self.tippers ~= nil then
 				  local tools= table.getn(self.tippers)
@@ -191,10 +193,14 @@ function courseplay:drive(self, dt)
 				    end
 				  end
 				end
-   			else
-				allowedToDrive = true		 		    
+   		else
+				allowedToDrive = true		
+ 				-- print('--');
+				-- print(self.recordnumber);
+				-- print(fill_level);
+				-- print(self.loaded);		    
 			end
-        elseif  self.ai_mode == 4 and (self.startWork == nil or self.stopWork == nil) then
+    elseif  self.ai_mode == 4 and (self.startWork == nil or self.stopWork == nil) then
 			allowedToDrive = false
 			self.info_text = self.locales.CPNoWorkArea
  		end
@@ -291,10 +297,19 @@ function courseplay:drive(self, dt)
 		self.sl = 3
 		ref_speed = self.max_speed
 	end
-
-	--C.Schoch
-	--if (self.sl == 3 and not self.beaconLightsActive) or (self.sl ~=3 and self.beaconLightsActive) then
-	--  	self:setBeaconLightsVisibility(not self.beaconLightsActive);	  
+	
+	--if self.RulMode == 1 then
+	--	if (self.sl == 3 and not self.beaconLightsActive) or (self.sl ~=3 and self.beaconLightsActive) then
+	--  		self:setBeaconLightsVisibility(not self.beaconLightsActive);
+	--	end
+    --elseif self.RulMode == 2 then
+    --    if (self.drive and not self.beaconLightsActive) or (not self.drive and self.beaconLightsActive) then
+	--  		self:setBeaconLightsVisibility(not self.beaconLightsActive);
+	--	end
+    --elseif self.RulMode == 3 then
+    --    if self.beaconLightsActive then
+	--  		self:setBeaconLightsVisibility(false);
+	--	end
 	--end
 	
 	-- Speed Control
@@ -364,30 +379,36 @@ function courseplay:drive(self, dt)
 	    AIVehicleUtil.driveInDirection(self, dt, self.steering_angle, 0.5, 0.5, 8, true, fwd, lx, lz, self.sl, 0.5);
 	    courseplay:set_traffc_collision(self, lx, lz)
 	  end
-  	else	     
-  		-- reset distance to waypoint
-  		self.shortest_dist = nil
+  else	   
+  	-- reset distance to waypoint
+  	self.shortest_dist = nil
 		if self.recordnumber < self.maxnumber  then
-		  if not self.wait then
-		    self.wait = true
-		  end
-		  self.recordnumber = self.recordnumber + 1
-		  -- ignore reverse Waypoints for mode 6
-		  local in_work_area = false
-		  if self.startWork ~= nil and self.stopWork ~= nil and self.recordnumber >= self.startWork and self.recordnumber <= self.stopWork then
-		    in_work_area = true
-		  end
-		  while self.ai_mode == 6 and self.recordnumber < self.maxnumber and in_work_area and self.Waypoints[self.recordnumber].rev do
+			if not self.wait then
+				self.wait = true
+			end
 			self.recordnumber = self.recordnumber + 1
-		  end
+			-- ignore reverse Waypoints for mode 6
+			local in_work_area = false
+			if self.startWork ~= nil and self.stopWork ~= nil and self.recordnumber >= self.startWork and self.recordnumber <= self.stopWork then
+				in_work_area = true
+			end
+			while self.ai_mode == 6 and self.recordnumber < self.maxnumber and in_work_area and self.Waypoints[self.recordnumber].rev do
+				self.recordnumber = self.recordnumber + 1
+			end
+			-- C.Schoch
+			while self.ai_mode == 4 and self.recordnumber < self.maxnumber and self.recordnumber > self.startWork + 1 and self.recordnumber < self.stopWork and self.Waypoints[self.recordnumber].rev do
+				self.recordnumber = self.recordnumber + 1
+			end
+			-- C.Schoch
 		else	-- reset some variables   
-		  self.recordnumber = 1
-		  self.unloaded = false
-		  self.loaded = false		  
-		  self.record = false
-		  self.play = true	  
-	  	end	
- 	 end
+			self.recordnumber = 1
+			self.unloaded = false
+			self.StopEnd = false
+			self.loaded = false		  
+			self.record = false
+			self.play = true	  
+		end	
+	end
 end;  
 
 
