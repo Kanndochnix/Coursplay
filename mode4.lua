@@ -12,7 +12,7 @@ function courseplay:handle_mode4(self,allowedToDrive, workArea, workSpeed,  fill
 		end
 		-- last point reached restart
 		if self.abortWork ~= nil then
-			if (last_recordnumber == self.abortWork - 2 ) and fill_level ~= 0 then
+			if (last_recordnumber == self.abortWork - 2 )and fill_level ~= 0 then
 			self.abortWork = nil
 			end
 		end
@@ -20,7 +20,6 @@ function courseplay:handle_mode4(self,allowedToDrive, workArea, workSpeed,  fill
 		if fill_level == 0 and workArea and self.abortWork == nil then
 			self.abortWork = self.recordnumber
 			self.recordnumber = self.stopWork - 4
-			self.loaded = false;
 		--	print(string.format("Abort: %d StopWork: %d",self.abortWork,self.stopWork))
         end
 

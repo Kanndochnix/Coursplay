@@ -178,9 +178,7 @@ function courseplay:drive(self, dt)
 		if self.ai_mode == 4 and self.tipper_attached and self.startWork ~= nil and self.stopWork ~= nil then
 			if self.recordnumber == 2 and fill_level < 100 and not self.loaded then   --or self.loaded
 				allowedToDrive = false
-				print('filling');
-		    	--self.info_text = string.format(courseplay:get_locale(self, "CPloading") ,tipper_fill_level,tipper_capacity )
-		    	self.global_info_text = string.format(courseplay:get_locale(self, "CPloading") ,tipper_fill_level,tipper_capacity )
+		    	self.info_text = string.format(courseplay:get_locale(self, "CPloading") ,tipper_fill_level,tipper_capacity )
 		    	
 				if self.tippers ~= nil then
 				  local tools= table.getn(self.tippers)
@@ -193,14 +191,10 @@ function courseplay:drive(self, dt)
 				    end
 				  end
 				end
-   		else
-				allowedToDrive = true		
- 				-- print('--');
-				-- print(self.recordnumber);
-				-- print(fill_level);
-				-- print(self.loaded);		    
+   			else
+				allowedToDrive = true		 		    
 			end
-    elseif  self.ai_mode == 4 and (self.startWork == nil or self.stopWork == nil) then
+        elseif  self.ai_mode == 4 and (self.startWork == nil or self.stopWork == nil) then
 			allowedToDrive = false
 			self.info_text = self.locales.CPNoWorkArea
  		end

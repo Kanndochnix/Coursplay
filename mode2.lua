@@ -179,20 +179,26 @@ function courseplay:unload_combine(self, dt)
   local tipper_fill_level, tipper_capacity = self:getAttachedTrailersFillLevelAndCapacity()
   local tipper_percentage = tipper_fill_level/tipper_capacity * 100
   local xt, yt, zt = nil, nil, nil  
-	local offset = self.tipper_offset;
+	--local offset = self.tipper_offset;
   if self.currentTrailerToFill ~= nil then
   	xt, yt, zt = worldToLocal(self.tippers[self.currentTrailerToFill].rootNode, x, y, z)
-		if self.tippers[self.currentTrailerToFill].tipper_offset ~= nil and combine.grainTankCapacity > 0 then
-			offset = offset + self.tippers[self.currentTrailerToFill].tipper_offset;
-		end
+		--if self.tippers[self.currentTrailerToFill].tipper_offset ~= nil and combine.grainTankCapacity > 0 then
+		--	offset = offset + self.tippers[self.currentTrailerToFill].tipper_offset;
+		--end
   else
     xt, yt, zt = worldToLocal(self.tippers[1].rootNode, x, y, z)
-		if self.tippers[1].tipper_offset ~= nil and combine.grainTankCapacity > 0 then
-			offset = offset + self.tippers[1].tipper_offset;
-		end;
+		--if self.tippers[1].tipper_offset ~= nil and combine.grainTankCapacity > 0 then
+		--	offset = offset + self.tippers[1].tipper_offset;
+		--end;
   end
   
-  local trailer_offset = math.abs(zt) + offset
+  --local trailer_offset = math.abs(zt) + offset
+
+  zt = math.abs(zt);
+  local trailer_offset = zt + self.tipper_offset
+  if self.currentTrailerToFill ~= nil then
+	trailer_offset = zt + self.tipper_offset*self.currentTrailerToFill
+  end
   
   if self.sl == nil then
     self.sl = 3
