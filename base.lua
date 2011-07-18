@@ -99,6 +99,7 @@ function courseplay:load(xmlFile)
 	self.locales.RulMode2 = g_i18n:getText("RulMode2")
 	self.locales.RulMode3 = g_i18n:getText("RulMode3")
 	
+	self.locales.CPNoWorkArea  = g_i18n:getText("CPNoWorkArea")
 	self.locales.CPWorkEnd = g_i18n:getText("CPWorkEnd")
 	self.locales.CPReadyUnloadBale = g_i18n:getText("CPReadyUnloadBale")
 	self.locales.CPUnloadBale = g_i18n:getText("CPUnloadBale")
@@ -180,6 +181,7 @@ function courseplay:load(xmlFile)
 
 	self.recordnumber = 1
 	self.tmr = 1
+	self.startlastload  = 1
 	self.timeout = 1
 	self.timer = 0
 	self.drive_slow_timer = 0
