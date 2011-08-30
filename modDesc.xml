@@ -23,7 +23,7 @@
 	<iconFilename>
 		store.png
  	</iconFilename>
-	<version>2.3</version>
+	<version>2.4</version>
     <l10n>
 	<text name="PointRecordStart">
 		<en>Record Course Start</en>
@@ -559,7 +559,7 @@
 
     <text name="CPWpOffsetX">
       <en>Waypoint-X Offset</en>
-      <de>Wegpunkt Offset-X</de>
+      <de>versetzt fahren</de>
     </text>
 
     <text name="CPWpOffsetZ">
@@ -586,6 +586,19 @@
       <en>crossing points:</en>
       <de>Kreuzungspunkte:</de>
     </text>
+    
+     <text name="CPopenHud">
+      <en>open Hud:</en>
+      <de>Hud anzeigen:</de>
+    </text>
+    <text name="CPopenKey">
+      <en>KEY INSERT</en>
+      <de>Einfügen-Taste</de>
+    </text>
+    <text name="CPopenMouse">
+      <en>right mouse button</en>
+      <de>rechte Maustaste</de>
+    </text>
 
 
     </l10n>
@@ -593,6 +606,7 @@
 	<extraSourceFiles>
         <sourceFile filename="register.lua" />
 		<sourceFile filename="base.lua" />
+		<sourceFile filename="astar.lua" />
 		<sourceFile filename="button.lua" />
 		<sourceFile filename="combines.lua" />
 		<sourceFile filename="course_management.lua" />

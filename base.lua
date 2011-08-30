@@ -171,8 +171,11 @@ function courseplay:load(xmlFile)
 	self.locales.CourseGenerate = g_i18n:getText("CourseGenerate")
 	self.locales.CourseFieldPointSet = g_i18n:getText("CourseFieldPointSet")
 	self.locales.CPWorkingWidht = g_i18n:getText("CPWorkingWidht")
+	self.locales.CPopenHud = g_i18n:getText("CPopenHud")
+	self.locales.CPopenHudMouse = g_i18n:getText("CPopenMouse")
+	self.locales.CPopenHudKey = g_i18n:getText("CPopenKey")
 	
-	
+	self.mouse_right_key_enabled = true
 	self.drive  = false
     self.StopEnd = false
 	self.lastGui = nil
@@ -496,8 +499,10 @@ self.pFactor = 3000;
 	courseplay:register_button(self, 6, "navigate_minus.png", "changeWpOffsetX", -0.5, self.hudInfoBasePosX + 0.285, self.hudInfoBasePosY + 0.210, 0.010, 0.010)
     courseplay:register_button(self, 6, "navigate_plus.png", "changeWpOffsetX", 0.5, self.hudInfoBasePosX + 0.300, self.hudInfoBasePosY +0.210, 0.010, 0.010)
     
-    courseplay:register_button(self, 6, "navigate_minus.png", "changeWpOffsetZ", -0.5, self.hudInfoBasePosX + 0.285, self.hudInfoBasePosY + 0.188, 0.010, 0.010)
-    courseplay:register_button(self, 6, "navigate_plus.png", "changeWpOffsetZ", 0.5, self.hudInfoBasePosX + 0.300, self.hudInfoBasePosY +0.188, 0.010, 0.010)
+    courseplay:register_button(self, 6, "blank.png", "mouse_right_key", nil, self.hudInfoBasePosX-0.05, self.hudInfoBasePosY + 0.185, 0.32, 0.015)
+    
+    --courseplay:register_button(self, 6, "navigate_minus.png", "mouse_right_key", -0.5, self.hudInfoBasePosX + 0.285, self.hudInfoBasePosY + 0.188, 0.010, 0.010)
+    --courseplay:register_button(self, 6, "navigate_plus.png", "changeWpOffsetZ", 0.5, self.hudInfoBasePosX + 0.300, self.hudInfoBasePosY +0.188, 0.010, 0.010)
 
     courseplay:register_button(self, 6, "blank.png", "change_WaypointMode", 1, self.hudInfoBasePosX-0.05, self.hudInfoBasePosY + 0.164, 0.32, 0.015)
     
@@ -541,20 +546,31 @@ end
 -- is been called everey frame
 function courseplay:update(dt)	
 	
-	--if self.user_input_active == true then
-	--  if self.currentGui == nil then
-	--    g_gui:loadGui(Utils.getFilename("emptyGui.xml", self.cp_directory), self.input_gui);
-	--    g_gui:showGui(self.input_gui);
-	--    self.currentGui = self.input_gui
-	--  end
-    --else
-    --  if self.currentGui == self.input_gui then
-    --    g_gui:showGui("");
-    --  end
-    --end
+	if self.isEntered then
+		if self.user_input_active == true then
+		  if self.currentGui == nil then
+		    g_gui:loadGui(Utils.getFilename("emptyGui.xml", self.cp_directory), self.input_gui);
+		    g_gui:showGui(self.input_gui);
+		    self.currentGui = self.input_gui
+		  end
+		  
+		  for unicode,isDown in pairs(Input.keyPressedState) do 
+		    if isDown then
+		      self:setCourseplayFunc("key_input", unicode)
+		    end
+		  end
+		  Input.keyPressedState = {};
+	    else
+	      if self.currentGui == self.input_gui then
+	        g_gui:showGui("");
+	        self.currentGui = nil
+	      end
+	    end
+	    
+	    if self.user_input_message then
+	      courseplay:user_input(self);
+	    end
     
-    if self.user_input_message then
-      courseplay:user_input(self);
     end
     
     
@@ -689,7 +705,8 @@ function courseplay:readStream(streamId, connection)
 	self.forced_to_stop = streamDebugReadBool(streamId)	
 	self.allow_following = streamDebugReadBool(streamId)	
 	self.mouse_enabled = streamDebugReadBool(streamId)
-	self.show_hud = streamDebugReadBool(streamId)	
+	self.show_hud = streamDebugReadBool(streamId)
+	self.mouse_right_key_enabled = streamDebugReadBool(streamId)		
 	self.showHudInfoBase = streamDebugReadInt32(streamId)
 	self.selected_combine_number = streamDebugReadInt32(streamId)
 	self.fold_move_direction = streamDebugReadInt32(streamId)  
@@ -805,6 +822,7 @@ function courseplay:writeStream(streamId, connection)
 	streamDebugWriteBool(streamId, self.allow_following)
 	streamDebugWriteBool(streamId, self.mouse_enabled)
 	streamDebugWriteBool(streamId, self.show_hud)
+	streamDebugWriteBool(streamId, self.mouse_right_key_enabled)	
 	streamDebugWriteInt32(streamId, self.showHudInfoBase)
 	streamDebugWriteInt32(streamId, self.selected_combine_number)
 	streamDebugWriteInt32(streamId, self.fold_move_direction)  
