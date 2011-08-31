@@ -181,6 +181,7 @@ function courseplay:load(xmlFile)
 	self.lastGui = nil
 	self.currentGui = nil
 	self.input_gui = "emptyGui";	
+	self.calculated_course = false
 
 	self.recordnumber = 1
 	self.tmr = 1
@@ -547,6 +548,7 @@ end
 function courseplay:update(dt)	
 	
 	if self.isEntered then
+		
 		if self.user_input_active == true then
 		  if self.currentGui == nil then
 		    g_gui:loadGui(Utils.getFilename("emptyGui.xml", self.cp_directory), self.input_gui);
@@ -647,11 +649,9 @@ function courseplay:readStream(streamId, connection)
   
   self.courseplay_courses = courseplay_courses
   
-  print("CCCCCCCCCCCCCCCCCCCCCCCCCC")
   print(table.getn(courseplay_courses))
   
   courseplay:reinit_courses(self)
-  print("CCCCCCCCCCCCCCCCCCCCCCCCCC")
   
   self.max_speed = streamDebugReadFloat32(streamId)
   self.turn_speed = streamDebugReadFloat32(streamId)
@@ -870,6 +870,7 @@ function courseplay:loadFromAttributesAndNodes(xmlFile, key, resetVehicles)
 		self.required_fill_level_for_follow = Utils.getNoNil(getXMLInt(xmlFile,key..string.format("#fill_follow")),50);
 		self.required_fill_level_for_drive_on = Utils.getNoNil(getXMLInt(xmlFile,key..string.format("#fill_drive")),90);
 		self.WpOffsetX = Utils.getNoNil(getXMLFloat(xmlFile,key..string.format("#OffsetX")),0);
+		self.mouse_right_key_enabled = Utils.getNoNil(getXMLFloat(xmlFile,key..string.format("#mouse_right_key_enabled")),true);
 		self.WpOffsetZ = Utils.getNoNil(getXMLFloat(xmlFile,key..string.format("#OffsetZ")),0);
 		self.abortWork = Utils.getNoNil(getXMLInt(xmlFile,key..string.format("#AbortWork")),nil);
 		self.turn_radius = Utils.getNoNil(getXMLInt(xmlFile,key..string.format("#turn")),17);
@@ -904,6 +905,7 @@ function courseplay:getSaveAttributesAndNodes(nodeIdent)
         ' AbortWork="'..tostring(self.abortWork)..'"'..
         ' turn="'..tostring(self.turn_radius)..'"'..
         ' courses="'..tostring(table.concat(self.loaded_courses, ","))..'"'..
+        ' mouse_right_key_enabled="'..tostring(mouse_right_key_enabled)..'"'..
 		' ai_mode="'..tostring(self.ai_mode)..'"';
     return attributes, nil;
 end

@@ -2,9 +2,28 @@
 A* algorithm for LUA
 Ported to LUA by Altair
 21 septembre 2006
+courseplay edit by hummel 2011
 --]]
 
-function CalcMoves(mapmat, px, py, tx, ty)	-- Based on some code of LMelior but made it work and improved way beyond his code, still thx LMelior!
+
+function round(num, idp)
+  return math.floor(num /idp) * idp
+end
+
+function CalcMoves(px, py, tx, ty)	-- Based on some code of LMelior but made it work and improved way beyond his code, still thx LMelior!
+ if not courseplay:is_field(py, px) then
+    return nil
+  end
+
+ local interval = 5
+ local vertical_costs = 10
+ local diagnoal_costs = 14
+ 
+ px = round(px, interval)
+ py = round(py, interval)
+ tx = round(tx, interval)
+ ty = round(ty, interval)
+
 --[[ PRE:
 mapmat is a 2d array
 px is the player's current x
@@ -22,151 +41,212 @@ It will return nil if all the available nodes have been checked but the target h
 --]]
 
 	-- variables
-	local openlist={}                 				-- Initialize table to store possible moves
+	local openlist={}                 		-- Initialize table to store possible moves
 	local closedlist={}						-- Initialize table to store checked gridsquares
 	local listk=1                   				-- List counter
         local closedk=0                					-- Closedlist counter
 	local tempH=math.abs(px-tx)+math.abs(py-ty)
 	local tempG=0
 	openlist[1]={x=px, y=py, g=0, h=tempH, f=0+tempH ,par=1}   	-- Make starting point in list
-	local xsize=table.getn(mapmat[1]) 				-- horizontal map size
-	local ysize=table.getn(mapmat)					-- vertical map size
+	local xsize=1024 				-- horizontal map size
+	local ysize=1024					-- vertical map size
 	local curbase={}						-- Current square from which to check possible moves
-	local basis=1							-- Index of current base
-
+	local basis=1						-- Index of current base	
+	local max_tries = 10000
+	local max_distance_factor = 10
+	local air_distance = tempH
+	
 	-- Growing loop
 	while listk>0 do
 
-	      	-- Get the lowest f of the openlist
-	      	local lowestF=openlist[listk].f
-	      	basis=listk
+	    -- Get the lowest f of the openlist
+	    local lowestF=openlist[listk].f
+	    basis=listk
 		for k=listk,1,-1 do
   		    if openlist[k].f<lowestF then
   		       lowestF=openlist[k].f
-                       basis=k
-	       	    end
+               basis=k
+	       	end
+		end
+
+		if closedk >= max_tries then
+		  return nil		
 		end
 
 		closedk=closedk+1
 		table.insert(closedlist,closedk,openlist[basis])
-
+		
 		curbase=closedlist[closedk]				 -- define current base from which to grow list
+		
+		print(string.format("a star check x: %f y %f - closedk: %d", curbase.x, curbase.y, closedk ))
+		
+		local wOK=true
+		local eOK=true           				 -- Booleans defining if they're OK to add
+		local sOK=true             				 -- (must be reset for each while loop)
+		local nOK=true
 
-		local rightOK=true
-		local leftOK=true           				 -- Booleans defining if they're OK to add
-		local downOK=true             				 -- (must be reset for each while loop)
-		local upOK=true
+		local nwOK=true
+		local seOK=true           				 
+		local swOK=true             				 
+		local noOK=true
 
 		-- Look through closedlist
 		if closedk>0 then
 		    for k=1,closedk do
-			if closedlist[k].x==curbase.x+1 and closedlist[k].y==curbase.y then
-				rightOK=false
-			end
-			if closedlist[k].x==curbase.x-1 and closedlist[k].y==curbase.y then
-				leftOK=false
-			end
-			if closedlist[k].x==curbase.x and closedlist[k].y==curbase.y+1 then
-				downOK=false
-			end
-			if closedlist[k].x==curbase.x and closedlist[k].y==curbase.y-1 then
-				upOK=false
-			end
+				if closedlist[k].x==curbase.x+interval and closedlist[k].y==curbase.y then
+					wOK=false
+				end
+				if closedlist[k].x==curbase.x-interval and closedlist[k].y==curbase.y then
+					eOK=false
+				end
+				if closedlist[k].x==curbase.x and closedlist[k].y==curbase.y+interval then
+					sOK=false
+				end
+				if closedlist[k].x==curbase.x and closedlist[k].y==curbase.y-interval then
+					nOK=false
+				end
+				
+				if closedlist[k].x==curbase.x+interval and closedlist[k].y==curbase.y-interval then
+					nwOK=false
+				end
+				
+				if closedlist[k].x==curbase.x-interval and closedlist[k].y==curbase.y-interval then
+					neOK=false
+				end
+				
+				if closedlist[k].x==curbase.x+interval and closedlist[k].y==curbase.y+interval then
+					swOK=false
+				end
+				
+				if closedlist[k].x==curbase.x-interval and closedlist[k].y==curbase.y+interval then
+					seOK=false
+				end
 		    end
 		end
 
 		-- Check if next points are on the map and within moving distance
-		if curbase.x+1>xsize then
-			rightOK=false
+		if curbase.x+interval>xsize then
+			wOK=false
+			nwOK=false
+			swOK=false
 		end
-		if curbase.x-1<1 then
-			leftOK=false
+		if curbase.x-interval<-1024 then
+			eOK=false
+			neOK=false
+			seOK=false
 		end
-		if curbase.y+1>ysize then
-			downOK=false
+		if curbase.y+interval>ysize then
+			sOK=false
+			swOK=false
+			seOK=false
 		end
-		if curbase.y-1<1 then
-			upOK=false
+		if curbase.y-interval<-1024 then
+			nOK=false
+			nwOK=false
+			neOK=false
 		end
 
 		-- If it IS on the map, check map for obstacles
 		--(Lua returns an error if you try to access a table position that doesn't exist, so you can't combine it with above)
-		if curbase.x+1<=xsize and mapmat[curbase.y][curbase.x+1]~=0 then
-			rightOK=false
+		if wOK and curbase.x+interval<=xsize and courseplay:area_has_fruit(curbase.y, curbase.x+interval) then
+			wOK=false
 		end
-		if curbase.x-1>=1 and mapmat[curbase.y][curbase.x-1]~=0 then
-			leftOK=false
+		if eOK and curbase.x-interval>=-1024 and courseplay:area_has_fruit(curbase.y, curbase.x-interval) then
+			eOK=false
 		end
-		if curbase.y+1<=ysize and mapmat[curbase.y+1][curbase.x]~=0 then
-			downOK=false
+		if sOK and curbase.y+interval<=ysize and courseplay:area_has_fruit(curbase.y+interval, curbase.x) then
+			sOK=false
 		end
-		if curbase.y-1>=1 and mapmat[curbase.y-1][curbase.x]~=0 then
-			upOK=false
+		if nOK and curbase.y-interval>=-1024 and courseplay:area_has_fruit(curbase.y-interval, curbase.x) then
+			nOK=false
 		end
 
 		-- check if the move from the current base is shorter then from the former parrent
-		tempG=curbase.g+1
+		tempG=curbase.g+interval
 		for k=1,listk do
-		    if rightOK and openlist[k].x==curbase.x+1 and openlist[k].y==curbase.y and openlist[k].g>tempG then
-			tempH=math.abs((curbase.x+1)-tx)+math.abs(curbase.y-ty)
-			table.insert(openlist,k,{x=curbase.x+1, y=curbase.y, g=tempG, h=tempH, f=tempG+tempH, par=closedk})
-			rightOK=false
+		    if wOK and openlist[k].x==curbase.x+interval and openlist[k].y==curbase.y then
+		      if openlist[k].g>tempG  then
+		      	  print("right OK 1")
+				  tempH=math.abs((curbase.x+interval)-tx)+math.abs(curbase.y-ty)
+				  table.insert(openlist,k,{x=curbase.x+interval, y=curbase.y, g=tempG, h=tempH, f=tempG+tempH, par=closedk})				 
+			  end
+			  wOK=false
 		    end
 
-		    if leftOK and openlist[k].x==curbase.x-1 and openlist[k].y==curbase.y and openlist[k].g>tempG then
-			tempH=math.abs((curbase.x-1)-tx)+math.abs(curbase.y-ty)
-			table.insert(openlist,k,{x=curbase.x-1, y=curbase.y, g=tempG, h=tempH, f=tempG+tempH, par=closedk})
-			leftOK=false
+		    if eOK and openlist[k].x==curbase.x-interval and openlist[k].y==curbase.y then		      
+		      if openlist[k].g>tempG  then
+		        print("left OK 1")
+			    tempH=math.abs((curbase.x-interval)-tx)+math.abs(curbase.y-ty)
+			    table.insert(openlist,k,{x=curbase.x-interval, y=curbase.y, g=tempG, h=tempH, f=tempG+tempH, par=closedk})
+			   
+			  end
+			  eOK=false
 		    end
 
-		    if downOK and openlist[k].x==curbase.x and openlist[k].y==curbase.y+1 and openlist[k].g>tempG then
-			tempH=math.abs((curbase.x)-tx)+math.abs(curbase.y+1-ty)
-			table.insert(openlist,k,{x=curbase.x, y=curbase.y+1, g=tempG, h=tempH, f=tempG+tempH, par=closedk})
-			downOK=false
+		    if sOK and openlist[k].x==curbase.x and openlist[k].y==curbase.y+interval then		      
+		      if openlist[k].g>tempG  then
+		        print("down OK 1")
+			    tempH=math.abs((curbase.x)-tx)+math.abs(curbase.y+interval-ty)
+				
+			    table.insert(openlist,k,{x=curbase.x, y=curbase.y+interval, g=tempG, h=tempH, f=tempG+tempH, par=closedk})
+			  
+			  end
+			  sOK=false
 		    end
 
-		    if upOK and openlist[k].x==curbase.x and openlist[k].y==curbase.y-1 and openlist[k].g>tempG then
-			tempH=math.abs((curbase.x)-tx)+math.abs(curbase.y-1-ty)
-			table.insert(openlist,k,{x=curbase.x, y=curbase.y-1, g=tempG, h=tempH, f=tempG+tempH, par=closedk})
-			upOK=false
+		    if nOK and openlist[k].x==curbase.x and openlist[k].y==curbase.y-interval then
+		      if openlist[k].g>tempG then
+		        print("up OK 1")
+			    tempH=math.abs((curbase.x)-tx)+math.abs(curbase.y-interval-ty)
+			    table.insert(openlist,k,{x=curbase.x, y=curbase.y-interval, g=tempG, h=tempH, f=tempG+tempH, par=closedk})
+			    
+			  end
+			  nOK=false
 		    end
    		end
 
 		-- Add points to openlist
 		-- Add point to the right of current base point
-		if rightOK then
+		if wOK then
+			print("right OK")
 			listk=listk+1
-			tempH=math.abs((curbase.x+1)-tx)+math.abs(curbase.y-ty)
-			table.insert(openlist,listk,{x=curbase.x+1, y=curbase.y, g=tempG, h=tempH, f=tempG+tempH, par=closedk})
+			tempH=math.abs((curbase.x+interval)-tx)+math.abs(curbase.y-ty)
+			
+			table.insert(openlist,listk,{x=curbase.x+interval, y=curbase.y, g=tempG, h=tempH, f=tempG+tempH, par=closedk})			
 		end
 
 		-- Add point to the left of current base point
-		if leftOK then
+		if eOK then
+			print("left OK")
 			listk=listk+1
-			tempH=math.abs((curbase.x-1)-tx)+math.abs(curbase.y-ty)
-			table.insert(openlist,listk,{x=curbase.x-1, y=curbase.y, g=tempG, h=tempH, f=tempG+tempH, par=closedk})
+			tempH=math.abs((curbase.x-interval)-tx)+math.abs(curbase.y-ty)			
+			table.insert(openlist,listk,{x=curbase.x-interval, y=curbase.y, g=tempG, h=tempH, f=tempG+tempH, par=closedk})			
 		end
 
 		-- Add point on the top of current base point
-		if downOK then
+		if sOK then
+			print("down OK")
 			listk=listk+1
-			tempH=math.abs(curbase.x-tx)+math.abs((curbase.y+1)-ty)
-			table.insert(openlist,listk,{x=curbase.x, y=curbase.y+1, g=tempG, h=tempH, f=tempG+tempH, par=closedk})
+			tempH=math.abs(curbase.x-tx)+math.abs((curbase.y+interval)-ty)
+			
+			table.insert(openlist,listk,{x=curbase.x, y=curbase.y+interval, g=tempG, h=tempH, f=tempG+tempH, par=closedk})			
 		end
 
 		-- Add point on the bottom of current base point
-		if upOK then
+		if nOK then
+			print("up OK")
 			listk=listk+1
-			tempH=math.abs(curbase.x-tx)+math.abs((curbase.y-1)-ty)
-			table.insert(openlist,listk,{x=curbase.x, y=curbase.y-1, g=tempG, h=tempH, f=tempG+tempH, par=closedk})
+			tempH=math.abs(curbase.x-tx)+math.abs((curbase.y-interval)-ty)
+			
+			table.insert(openlist,listk,{x=curbase.x, y=curbase.y-interval, g=tempG, h=tempH, f=tempG+tempH, par=closedk})			
 		end
 
 		table.remove(openlist,basis)
 		listk=listk-1
 
-                if closedlist[closedk].x==tx and closedlist[closedk].y==ty then
-                   return closedlist
-                end
+        if closedlist[closedk].x==tx and closedlist[closedk].y==ty then
+           return CalcPath(closedlist)
+        end
 	end
 
 	return nil
